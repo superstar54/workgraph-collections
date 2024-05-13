@@ -1,0 +1,70 @@
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "workgraph-collections"
+dynamic = ["version"]  # read from aiida_workgraph/__init__.py
+description = "Collections of node-based workflow created using aiida-workgraph."
+authors = [{name = "Xing Wang", email = "xingwang1991@gmail.com"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Framework :: AiiDA",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering"
+]
+keywords = ["aiida", "workflows"]
+requires-python = ">=3.9"
+dependencies = [
+    "aiida-workgraph",
+    "aiida-quantumespresso",
+    "aiida-cp2k",
+]
+
+[project.urls]
+Documentation = "https://workgraph-collections.readthedocs.io"
+Source = "https://github.com/superstar54/workgraph-collections"
+
+[project.optional-dependencies]
+docs = [
+    "sphinx_rtd_theme",
+    "sphinx~=7.2",
+    "sphinx-copybutton~=0.5.0",
+    "sphinx-design~=0.5.0",
+    "sphinx-notfound-page~=1.0",
+    "sphinxext-rediraffe~=0.2.4",
+    "sphinx-intl~=2.1.0",
+    "myst-nb~=1.0.0",
+    "nbsphinx",
+]
+pre-commit = [
+    "pre-commit~=2.2",
+    "pylint~=2.17.4",
+]
+tests = [
+    "pytest~=7.0",
+    "pytest-cov~=2.7,<2.11",
+    "playwright",
+    "httpx",
+]
+
+[tool.flit.sdist]
+exclude = [
+    "docs/",
+    "tests/",
+    "aiida_workgraph/web/frontend/node_modules/",
+    "aiida_workgraph/widget/node_modules/",
+]
+
+
+[tool.pylint.format]
+max-line-length = 120
