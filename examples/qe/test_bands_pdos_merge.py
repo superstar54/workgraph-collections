@@ -7,8 +7,8 @@ from aiida.orm import Dict, KpointsData, StructureData, load_code, load_group
 from aiida_workgraph import WorkGraph
 from ase.build import bulk
 from aiida_quantumespresso.workflows.pw.relax import PwRelaxWorkChain
-from aiida_quantumespresso.workgraphs.bands import bands_workgraph
-from aiida_quantumespresso.workgraphs.pdos import pdos_workgraph
+from workgraph_collections.qe.bands import bands_workgraph
+from workgraph_collections.qe.pdos import pdos_workgraph
 
 load_profile()
 

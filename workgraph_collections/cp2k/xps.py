@@ -4,13 +4,11 @@ from aiida.orm import Kind, Site, Dict, StructureData
 
 
 @node.calcfunction(outputs=[["General", "structures"], ["General", "site_info"]])
-def get_structures(structure, atoms_list, marker="X"):
+def get_marked_structures(structure, atoms_list, marker="X"):
     """"""
     structures = {
         "ground": StructureData(ase=structure.get_ase()),
     }
-    
-
     for data in atoms_list.get_list():
         index, orbital = data
         marked_structure = StructureData()
@@ -49,9 +47,11 @@ def run_scf(
     parameters,
     basis_pseudo_files,
     core_hole_pseudos,
-    metadata,
+    core_hole_treatment = "xch",
+    metadata=None,
 ):
     from aiida_cp2k.calculations import Cp2kCalculation
+    from copy import deepcopy
     wg = WorkGraph("run_scf")
     # ground state
     scf_ground = wg.nodes.new(Cp2kCalculation, name="scf_ground")
@@ -67,12 +67,18 @@ def run_scf(
     scf_ground.to_context = [["output_parameters", "scf.ground"]]
     # excited state node
     for key, structure in structures.items():
-        ch_parameters = parameters.copy()
+        ch_parameters = deepcopy(parameters)
         symbol = key.split("_")[0]
         ch_parameters["FORCE_EVAL"]["SUBSYS"]["KIND"].append(core_hole_pseudos[symbol])
-        ch_parameters["FORCE_EVAL"]["DFT"].update({"UKS": True,
+        if core_hole_treatment.upper == "XCH":
+            ch_parameters["FORCE_EVAL"]["DFT"].update({"UKS": True,
                                             "MULTIPLICITY": 2,
                                             "CHARGE": -1
+                                            })
+        else:
+            ch_parameters["FORCE_EVAL"]["DFT"].update({"UKS": False,
+                                            "MULTIPLICITY": 1,
+                                            "CHARGE": 0
                                             })
         scf_ch = wg.nodes.new(Cp2kCalculation, name=f"scf_{key}")
         scf_ch.set(
@@ -96,14 +102,56 @@ def binding_energy(corrections, **scf_outputs):
     results = {}
     for key, output in scf_outputs.items():
         symbol, index = key.split("_")
-        e = (output["energy"] - output_ground["energy"])*27.211324570 + corrections[symbol]
+        e = (output["energy"] - output_ground["energy"])*27.211324570 + corrections[key]
         results[key] = e
     return {"binding_energy": Dict(results)}
+
+
+def xps_spectra_broadening(
+    points, equivalent_sites_data, gamma=0.3, sigma=0.3, label="", intensity=1.0
+):
+    """Broadening the XPS spectra with Voigt function and return the spectra data"""
+
+    import numpy as np
+    from scipy.special import voigt_profile  # pylint: disable=no-name-in-module
+
+    result_spectra = {}
+    fwhm_voight = gamma / 2 + np.sqrt(gamma**2 / 4 + sigma**2)
+    for element, point in points.items():
+        result_spectra[element] = {}
+        final_spectra_y_arrays = []
+        total_multiplicity = sum(
+            [equivalent_sites_data[site]["multiplicity"] for site in point]
+        )
+        max_core_level_shift = max(point.values())
+        min_core_level_shift = min(point.values())
+        # Energy range for the Broadening function
+        x_energy_range = np.linspace(
+            min_core_level_shift - fwhm_voight - 1.5,
+            max_core_level_shift + fwhm_voight + 1.5,
+            500,
+        )
+        for site in point:
+            # Weight for the spectra of every atom
+            intensity = equivalent_sites_data[site]["multiplicity"] * intensity
+            relative_core_level_position = point[site]
+            y = (
+                intensity
+                * voigt_profile(
+                    x_energy_range - relative_core_level_position, sigma, gamma
+                )
+                / total_multiplicity
+            )
+            result_spectra[element][site] = [x_energy_range, y]
+            final_spectra_y_arrays.append(y)
+        total = sum(final_spectra_y_arrays)
+        result_spectra[element]["total"] = [x_energy_range, total]
+    return result_spectra
 
 @node.graph_builder()
 def xps_workflow(name="binding_energy"):
     wg = WorkGraph(name)
-    structures_node = wg.nodes.new(get_structures, name="get_structures")
+    structures_node = wg.nodes.new(get_marked_structures, name="get_marked_structures")
     scf_node = wg.nodes.new(run_scf, name="run_scf",
                             structures=structures_node.outputs["structures"])
     wg.nodes.new(binding_energy, name="binding_energy",

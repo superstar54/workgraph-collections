@@ -6,7 +6,7 @@ from aiida import load_profile
 from aiida.orm import Dict, KpointsData, StructureData, load_code, load_group
 from ase.build import bulk
 
-from aiida_quantumespresso.workgraphs.bands import bands_workgraph
+from workgraph_collections.qe.bands import bands_workgraph
 
 load_profile()
 
