@@ -13,4 +13,5 @@ This repository contains a collection of workgraphs for various codes.
 
 ## CP2K
 
+- Equation of state (EOS)
 - X-ray photoelectron spectroscopy (XPS)
