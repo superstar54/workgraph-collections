@@ -49,5 +49,10 @@ def eos_workgraph(
             "metadata": metadata,
         },
     )
-    wg.nodes.new(fit_eos, name="fit_eos", datas=all_scf1.outputs["result"])
+    wg.nodes.new(
+        fit_eos,
+        name="fit_eos",
+        volumes=scale_structure1.outputs["volumes"],
+        scf_outputs=all_scf1.outputs["result"],
+    )
     return wg

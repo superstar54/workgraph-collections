@@ -75,6 +75,6 @@ wg = eos_workgraph(
     basis_pseudo_files=basis_pseudo_files,
     metadata=metadata,
 )
-wg.name = "QE-EOS-Si"
+wg.name = "CP2K-EOS-Si"
 # print("correction_energies", correction_energies)
 wg.submit()
