@@ -28,6 +28,7 @@ dependencies = [
     "aiida-workgraph",
     "aiida-quantumespresso",
     "aiida-cp2k",
+    "aiida-bader",
 ]
 
 [project.urls]
