@@ -26,6 +26,7 @@ keywords = ["aiida", "workflows"]
 requires-python = ">=3.9"
 dependencies = [
     "aiida-workgraph",
+    "ase",
     "aiida-quantumespresso",
     "aiida-cp2k",
     "aiida-bader",
