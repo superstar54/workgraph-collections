@@ -5,6 +5,7 @@ from aiida_workgraph import node
 def pw_calculator(
     atoms,
     pseudopotentials,
+    kpts=(3, 3, 3),
     binary="pw.x",
     input_data=None,
     pseudo_dir="./pseudopotentials",
@@ -21,6 +22,7 @@ def pw_calculator(
         profile=profile,
         pseudopotentials=pseudopotentials,
         input_data=input_data,
+        kpts=kpts,
     )
 
     atoms.calc = calc

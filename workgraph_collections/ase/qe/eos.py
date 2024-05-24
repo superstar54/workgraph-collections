@@ -2,18 +2,20 @@ from aiida_workgraph import node, WorkGraph
 from workgraph_collections.ase.common.eos import generate_scaled_atoms, fit_eos
 
 
-@node.graph_builder(outputs=[["context.result", "scf_results"]])
+@node.graph_builder(outputs=[["context.results", "scf_results"]])
 def all_scf(scaled_atoms, scf_inputs):
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
     from .base import pw_calculator
 
     wg = WorkGraph()
-    for key, atoms in scaled_atoms.items():
-        scf = wg.nodes.new(pw_calculator, name=f"scf_{key}", atoms=atoms)
+    for key, atoms in scaled_atoms.value.items():
+        scf = wg.nodes.new(
+            pw_calculator, name=f"scf_{key}", atoms=atoms, run_remotely=True
+        )
         scf.set(scf_inputs)
         # save the output parameters to the context
-        scf.to_context = [["result", f"result.{key}"]]
+        scf.to_context = [["results", f"results.{key}"]]
     return wg
 
 
@@ -30,7 +32,11 @@ def eos_workgraph(
     """
     wg = WorkGraph(name)
     scale_atoms_node = wg.nodes.new(
-        generate_scaled_atoms, name="scale_atoms", atoms=atoms, scales=scales
+        generate_scaled_atoms,
+        name="scale_atoms",
+        atoms=atoms,
+        scales=scales,
+        run_remotely=True,
     )
     all_scf1 = wg.nodes.new(
         all_scf,
@@ -42,5 +48,6 @@ def eos_workgraph(
         name="fit_eos",
         volumes=scale_atoms_node.outputs["volumes"],
         scf_results=all_scf1.outputs["scf_results"],
+        run_remotely=True,
     )
     return wg
