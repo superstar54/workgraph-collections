@@ -19,3 +19,11 @@ This repository contains a collection of workgraphs for various codes.
 
 - Equation of state (EOS)
 - X-ray photoelectron spectroscopy (XPS)
+
+
+## ASE
+
+### Espresso calculator
+
+- Equation of state (EOS)
+- Atomization energy
