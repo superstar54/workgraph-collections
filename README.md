@@ -23,6 +23,9 @@ This repository contains a collection of workgraphs for various codes.
 
 ## ASE
 
+### EMT calculator
+- Atomization energy
+
 ### Espresso calculator
 
 - Equation of state (EOS)
