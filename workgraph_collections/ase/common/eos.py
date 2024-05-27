@@ -1,8 +1,9 @@
 from aiida_workgraph import node
+from ase import Atoms
 
 
 @node(outputs=[["General", "scaled_atoms"], ["General", "volumes"]])
-def generate_scaled_atoms(atoms, scales):
+def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
     """Scale the structure by the given scales."""
     volumes = {}
     scaled_atoms = {}
@@ -10,12 +11,11 @@ def generate_scaled_atoms(atoms, scales):
         atoms1 = atoms.copy()
         atoms1.set_cell(atoms.cell * scales[i], scale_atoms=True)
         scaled_atoms[f"s_{i}"] = atoms1
-        volumes[f"s_{i}"] = atoms1.get_volume()
     return {"scaled_atoms": scaled_atoms, "volumes": volumes}
 
 
 @node()
-def fit_eos(volumes, scf_results):
+def fit_eos(volumes: dict, scf_results: dict) -> dict:
     """Fit the EOS of the data."""
     from ase.eos import EquationOfState
     from ase.units import kJ

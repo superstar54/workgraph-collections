@@ -1,17 +1,21 @@
 from aiida_workgraph import node
+from ase import Atoms
 
 
 @node(outputs=[["General", "atoms"], ["General", "results"]])
 def pw_calculator(
-    atoms,
-    pseudopotentials,
-    kpts=(3, 3, 3),
-    binary="pw.x",
-    input_data=None,
-    pseudo_dir="./pseudopotentials",
+    atoms: Atoms,
+    pseudopotentials: dict,
+    kpts: list = None,
+    binary: str = "pw.x",
+    input_data: dict = None,
+    pseudo_dir: str = "./pseudopotentials",
 ):
     """Run a Quantum Espresso calculation on the given atoms object."""
     from ase.calculators.espresso import Espresso, EspressoProfile
+
+    if kpts is None:
+        kpts = (1, 1, 1)
 
     profile = EspressoProfile(
         binary=binary,
