@@ -12,9 +12,6 @@ This repository contains a collection of workgraphs for various codes.
 - Projected density of states (PDOS)
 - X-ray photoelectron spectroscopy (XPS)
 
-
-
-
 ## CP2K
 
 - Equation of state (EOS)
@@ -30,3 +27,7 @@ This repository contains a collection of workgraphs for various codes.
 
 - Equation of state (EOS)
 - Atomization energy
+
+
+## GPAW
+- Wannier90
