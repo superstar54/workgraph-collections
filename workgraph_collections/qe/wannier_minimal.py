@@ -5,7 +5,7 @@ from aiida_wannier90.calculations.wannier90 import Wannier90Calculation
 
 
 @node.graph_builder()
-def minimal_wannier_workgraph(structure=None, inputs=None):
+def wannier_minimal_workgraph(structure=None, inputs=None):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph

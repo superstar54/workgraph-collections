@@ -44,9 +44,27 @@ def prepare_wannier90_pp_inputs(parameters, nscf_output):
 
 
 @node.graph_builder()
-def wannier_workgraph(structure=None, inputs=None):
+def wannier_workgraph(
+    structure=None,
+    scf_inputs=None,
+    nscf_inputs=None,
+    projwfc_inputs=None,
+    pw2wannier90_inputs=None,
+    wannier90_inputs=None,
+    bands_kpoints_distance=None,
+):
     """Generate PdosWorkGraph."""
-    inputs = {} if inputs is None else inputs
+    from copy import deepcopy
+
+    scf_inputs = {} if scf_inputs is None else scf_inputs
+    nscf_inputs = {} if nscf_inputs is None else nscf_inputs
+    projwfc_inputs = {} if projwfc_inputs is None else projwfc_inputs
+    pw2wannier90_inputs = {} if pw2wannier90_inputs is None else pw2wannier90_inputs
+    wannier90_inputs = (
+        {"wannier90": {"parameters": {}}}
+        if wannier90_inputs is None
+        else wannier90_inputs
+    )
     # create workgraph
     wg = WorkGraph()
     wg.ctx = {}
@@ -55,21 +73,19 @@ def wannier_workgraph(structure=None, inputs=None):
         SeekpathNode,
         name="seekpath",
         structure=structure,
+        reference_distance=bands_kpoints_distance,
     )
     inspect_seekpath_node = wg.nodes.new(
         inspect_seekpath,
         name="inspect_seekpath",
         parameters=seekpath_node.outputs["parameters"],
     )
-    inspect_seekpath
     # -------- scf -----------
     scf_node = wg.nodes.new(PwBaseWorkChain, name="scf")
-    scf_inputs = inputs.get("scf", {})
     scf_inputs["pw.structure"] = seekpath_node.outputs["primitive_structure"]
     scf_node.set(scf_inputs)
     # -------- nscf -----------
     nscf_node = wg.nodes.new(PwBaseWorkChain, name="nscf")
-    nscf_inputs = inputs.get("nscf", {})
     nscf_inputs.update(
         {
             "pw.structure": seekpath_node.outputs["primitive_structure"],
@@ -82,7 +98,6 @@ def wannier_workgraph(structure=None, inputs=None):
         ProjwfcBaseWorkChain,
         name="projwfc",
     )
-    projwfc_inputs = inputs.get("projwfc", {})
     projwfc_inputs.update({"projwfc.parent_folder": nscf_node.outputs["remote_folder"]})
     projwfc.set(projwfc_inputs)
     # -------- wannier90_pp -----------
@@ -91,7 +106,7 @@ def wannier_workgraph(structure=None, inputs=None):
         name="wannier90_pp",
         bands=nscf_node.outputs["output_band"],
     )
-    wannier90_pp_inputs = inputs.get("wannier90_pp", {"wannier90": {"parameters": {}}})
+    wannier90_pp_inputs = deepcopy(wannier90_inputs)
     wannier90_pp_inputs.update(
         {
             "wannier90.structure": seekpath_node.outputs["primitive_structure"],
@@ -124,11 +139,9 @@ def wannier_workgraph(structure=None, inputs=None):
             "pw2wannier90.parent_folder": nscf_node.outputs["remote_folder"],
         }
     )
-    pw2wannier90_inputs = inputs.get("pw2wannier90", {})
     pw2wannier90.set(pw2wannier90_inputs)
     # -------- wannier90 -----------
     wannier90 = wg.nodes.new(Wannier90BaseWorkChain, name="wannier90")
-    wannier90_inputs = inputs.get("wannier90", {})
     wannier90_inputs.update(
         {
             "wannier90.structure": seekpath_node.outputs["primitive_structure"],

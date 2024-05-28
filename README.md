@@ -11,6 +11,10 @@ This repository contains a collection of workgraphs for various codes.
 - Bands
 - Projected density of states (PDOS)
 - X-ray photoelectron spectroscopy (XPS)
+- Wannier functions
+    - minimal workflow using CalcJob
+    - minimal workflow using BaseWorkChain
+    - Bands workflow
 
 ## CP2K
 
