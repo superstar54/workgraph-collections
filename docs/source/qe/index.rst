@@ -23,4 +23,4 @@ To run this tutorial, you need to install `aiida-quantumespresso` and `aiida-pse
    bands
    pdos
    xps
-   wannier
+   wannier90

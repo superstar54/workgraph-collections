@@ -12,6 +12,7 @@ This repository contains a collection of workgraphs for various codes.
    qe/index
    cp2k/index
    ase/index
+   gpaw/index
 
 
 Indices and tables

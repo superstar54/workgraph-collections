@@ -11,10 +11,7 @@ This repository contains a collection of workgraphs for various codes.
 - [Bands structure](https://workgraph-collections.readthedocs.io/en/latest/qe/bands.html)
 - [Projected density of states (PDOS)](https://workgraph-collections.readthedocs.io/en/latest/qe/pdos.html)
 - [X-ray photoelectron spectroscopy (XPS)](https://workgraph-collections.readthedocs.io/en/latest/qe/xps.html)
-- Wannier functions
-    - minimal workflow using CalcJob
-    - minimal workflow using BaseWorkChain
-    - Bands workflow
+- [Wannier functions](https://workgraph-collections.readthedocs.io/en/latest/qe/wannier.html)
 
 ## CP2K
 
@@ -25,13 +22,18 @@ This repository contains a collection of workgraphs for various codes.
 ## ASE
 
 ### EMT calculator
+
+- [Calculator](https://workgraph-collections.readthedocs.io/en/latest/ase/emt/base.html)
 - [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/emt.html)
 
 ### Espresso calculator
 
+- [Calculator](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/base.html)
 - [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/eos.html)
 - [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/atomization.html)
 
 
 ## GPAW
-- Wannier90
+
+- [Calculator](https://workgraph-collections.readthedocs.io/en/latest/gpaw/base.html)
+- [Wannier90](https://workgraph-collections.readthedocs.io/en/latest/gpaw/wannier.html)

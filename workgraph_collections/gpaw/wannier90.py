@@ -1,5 +1,6 @@
 from aiida_workgraph import node, WorkGraph
 from .base import gpaw_calculator
+from ase import Atoms
 
 
 @node()
@@ -30,11 +31,10 @@ def wannier90(
 
 @node.graph_builder()
 def wannier90_workgraph(
-    name="wannier90",
-    atoms=None,
+    atoms: Atoms = None,
 ):
     """Workgraph for Wannier90 calculation."""
-    wg = WorkGraph(name)
+    wg = WorkGraph()
     scf_node = wg.nodes.new(
         gpaw_calculator,
         name="scf",
