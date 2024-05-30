@@ -93,7 +93,6 @@ def run_scf(
 
 @node.graph_builder(outputs=[["binding_energy.result", "result"]])
 def xps_workgraph(
-    name: str = "xps",
     structure: StructureData = None,
     code: Code = None,
     atoms_list: list = None,
@@ -111,7 +110,7 @@ def xps_workgraph(
     2. Run the SCF calculation for ground state, and each marked structure with core hole.
     3. Calculate the binding energy.
     """
-    wg = WorkGraph(name)
+    wg = WorkGraph()
     get_marked_structures1 = wg.nodes.new(
         get_marked_structures,
         name="get_marked_structures",

@@ -1,12 +1,11 @@
-
-CP2K
+EMT
 ===========================================
 
-Here are the collection of WorkGraphs for CP2K
+Here are the collection of WorkGraphs for EMT
 
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
 
-   eos
-   xps
+   base
+   atomization_energy

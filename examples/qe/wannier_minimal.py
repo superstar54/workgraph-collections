@@ -1,4 +1,4 @@
-from workgraph_collections.qe.wannier_minimal import wannier_minimal_workgraph
+from workgraph_collections.qe.wannier90_minimal import wannier90_minimal_workgraph
 from aiida_wannier90.workflows.minimal import get_explicit_kpoints
 from aiida import load_profile, orm
 from copy import deepcopy
@@ -173,6 +173,6 @@ wannier_inputs = {
         "settings": orm.Dict({"postproc_setup": False}),
     },
 }
-wg = wannier_minimal_workgraph(structure=structure, inputs=wannier_inputs)
+wg = wannier90_minimal_workgraph(structure=structure, inputs=wannier_inputs)
 wg.name = "Wannier-GaAs"
 wg.run()

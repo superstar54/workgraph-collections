@@ -21,7 +21,6 @@ def all_scf(structures, scf_inputs):
 
 @node.graph_builder(outputs=[["fit_eos.result", "result"]])
 def eos_workgraph(
-    name: str = "eos",
     structure: orm.StructureData = None,
     code: orm.Code = None,
     scales: list = None,
@@ -34,7 +33,7 @@ def eos_workgraph(
     2. Run the SCF calculation for each scaled structure.
     3. Fit the EOS.
     """
-    wg = WorkGraph(name)
+    wg = WorkGraph()
     scale_structure1 = wg.nodes.new(
         scale_structure, name="scale_structure", structure=structure, scales=scales
     )

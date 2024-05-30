@@ -7,10 +7,10 @@ This repository contains a collection of workgraphs for various codes.
 
 ## Qauntum ESPRESSO
 
-- Equation of state (EOS)
-- Bands
-- Projected density of states (PDOS)
-- X-ray photoelectron spectroscopy (XPS)
+- [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/qe/eos.html)
+- [Bands structure](https://workgraph-collections.readthedocs.io/en/latest/qe/bands.html)
+- [Projected density of states (PDOS)](https://workgraph-collections.readthedocs.io/en/latest/qe/pdos.html)
+- [X-ray photoelectron spectroscopy (XPS)](https://workgraph-collections.readthedocs.io/en/latest/qe/xps.html)
 - Wannier functions
     - minimal workflow using CalcJob
     - minimal workflow using BaseWorkChain
@@ -18,19 +18,19 @@ This repository contains a collection of workgraphs for various codes.
 
 ## CP2K
 
-- Equation of state (EOS)
-- X-ray photoelectron spectroscopy (XPS)
+- [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/cp2k/eos.html)
+- [X-ray photoelectron spectroscopy (XPS)](https://workgraph-collections.readthedocs.io/en/latest/cp2k/xps.html)
 
 
 ## ASE
 
 ### EMT calculator
-- Atomization energy
+- [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/emt.html)
 
 ### Espresso calculator
 
-- Equation of state (EOS)
-- Atomization energy
+- [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/eos.html)
+- [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/atomization.html)
 
 
 ## GPAW

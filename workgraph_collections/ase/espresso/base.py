@@ -3,7 +3,7 @@ from ase import Atoms
 
 
 @node(outputs=[["General", "atoms"], ["General", "results"]])
-def pw_calculator(
+def espresso_calculator(
     atoms: Atoms,
     pseudopotentials: dict,
     kpts: list = None,

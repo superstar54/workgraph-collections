@@ -13,4 +13,4 @@ The recommended method of installation is to use the Python package manager |pip
 This will install the latest version.
 
 
-.. |pip| replace:: ``pip``
+.. _pip: https://pip.pypa.io/en/stable/

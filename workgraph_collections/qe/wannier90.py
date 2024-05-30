@@ -44,7 +44,7 @@ def prepare_wannier90_pp_inputs(parameters, nscf_output):
 
 
 @node.graph_builder()
-def wannier_workgraph(
+def wannier90_workgraph(
     structure=None,
     scf_inputs=None,
     nscf_inputs=None,
@@ -67,13 +67,13 @@ def wannier_workgraph(
     )
     # create workgraph
     wg = WorkGraph()
-    wg.ctx = {}
+    wg.context = {}
     # -------- seekpath -----------
     seekpath_node = wg.nodes.new(
         SeekpathNode,
         name="seekpath",
         structure=structure,
-        reference_distance=bands_kpoints_distance,
+        kwargs={"reference_distance": bands_kpoints_distance},
     )
     inspect_seekpath_node = wg.nodes.new(
         inspect_seekpath,

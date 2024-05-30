@@ -1,6 +1,6 @@
 
 Welcome to WorkGraph Collections' documentation!
-===========================================
+===================================================
 
 This repository contains a collection of workgraphs for various codes.
 
@@ -11,6 +11,7 @@ This repository contains a collection of workgraphs for various codes.
    installation
    qe/index
    cp2k/index
+   ase/index
 
 
 Indices and tables

@@ -5,12 +5,12 @@ from aiida_wannier90.calculations.wannier90 import Wannier90Calculation
 
 
 @node.graph_builder()
-def wannier_minimal_workgraph(structure=None, inputs=None):
+def wannier90_minimal_workgraph(structure=None, inputs=None):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
     wg = WorkGraph()
-    wg.ctx = {}
+    wg.context = {}
     # -------- scf -----------
     scf_node = wg.nodes.new(PwCalculation, name="scf", structure=structure)
     scf_inputs = inputs.get("scf", {})

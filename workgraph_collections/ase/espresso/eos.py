@@ -6,7 +6,7 @@ from workgraph_collections.ase.common.eos import generate_scaled_atoms, fit_eos
 def all_scf(scaled_atoms, scf_inputs):
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
-    from .base import pw_calculator
+    from .base import espresso_calculator
 
     wg = WorkGraph()
     wg.context = {"scaled_atoms": scaled_atoms}
@@ -14,7 +14,7 @@ def all_scf(scaled_atoms, scf_inputs):
     # that's why I put the scaled atoms in the context, so that we can link them
     for key, atoms in scaled_atoms.value.items():
         scf = wg.nodes.new(
-            pw_calculator, name=f"scf_{key}", atoms=atoms, run_remotely=True
+            espresso_calculator, name=f"scf_{key}", atoms=atoms, run_remotely=True
         )
         scf.set(scf_inputs)
         # save the output parameters to the context

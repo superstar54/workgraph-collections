@@ -7,12 +7,12 @@ from aiida_wannier90_workflows.workflows.base.wannier90 import Wannier90BaseWork
 
 
 @node.graph_builder()
-def wannier_minimal_base_workgraph(structure=None, inputs=None):
+def wannier90_minimal_base_workgraph(structure=None, inputs=None):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
     wg = WorkGraph()
-    wg.ctx = {}
+    wg.context = {}
     # -------- scf -----------
     scf_node = wg.nodes.new(PwBaseWorkChain, name="scf")
     scf_inputs = inputs.get("scf", {})
