@@ -33,7 +33,7 @@ def eos_workgraph(
     2. Run the SCF calculation for each scaled structure.
     3. Fit the EOS.
     """
-    wg = WorkGraph()
+    wg = WorkGraph("EOS")
     scale_structure1 = wg.nodes.new(
         scale_structure, name="scale_structure", structure=structure, scales=scales
     )

@@ -24,7 +24,6 @@ def all_scf(scaled_atoms, scf_inputs):
 
 @node.graph_builder(outputs=[["fit_eos.result", "result"]])
 def eos_workgraph(
-    name="eos",
     atoms=None,
     scales=None,
 ):
@@ -33,7 +32,7 @@ def eos_workgraph(
     2. Run the SCF calculation for each scaled atoms.
     3. Fit the EOS.
     """
-    wg = WorkGraph(name)
+    wg = WorkGraph("EOS")
     scale_atoms_node = wg.nodes.new(
         generate_scaled_atoms,
         name="scale_atoms",

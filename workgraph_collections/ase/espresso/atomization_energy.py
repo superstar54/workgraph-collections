@@ -14,7 +14,7 @@ def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
 
     from .base import espresso_calculator
 
-    wg = WorkGraph("atomization_energy")
+    wg = WorkGraph("Atomization energy")
     pw_atom = wg.nodes.new(
         espresso_calculator, name="scf_atom", run_remotely=True, atoms=atom
     )

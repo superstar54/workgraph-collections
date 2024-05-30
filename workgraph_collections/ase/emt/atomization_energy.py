@@ -13,7 +13,7 @@ def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
     """Workgraph for atomization energy calculation using EMT calculator."""
     from .base import emt_calculator
 
-    wg = WorkGraph("atomization_energy")
+    wg = WorkGraph("Atomization energy")
     pw_atom = wg.nodes.new(
         emt_calculator, name="scf_atom", run_remotely=True, atoms=atom
     )

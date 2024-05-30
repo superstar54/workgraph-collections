@@ -66,7 +66,7 @@ def wannier90_workgraph(
         else wannier90_inputs
     )
     # create workgraph
-    wg = WorkGraph()
+    wg = WorkGraph("Wannier90")
     wg.context = {}
     # -------- seekpath -----------
     seekpath_node = wg.nodes.new(

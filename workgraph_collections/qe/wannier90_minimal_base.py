@@ -11,7 +11,7 @@ def wannier90_minimal_base_workgraph(structure=None, inputs=None):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
-    wg = WorkGraph()
+    wg = WorkGraph("Wannier90_Minimal_Base")
     wg.context = {}
     # -------- scf -----------
     scf_node = wg.nodes.new(PwBaseWorkChain, name="scf")

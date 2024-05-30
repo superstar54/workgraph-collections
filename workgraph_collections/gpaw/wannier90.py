@@ -34,7 +34,7 @@ def wannier90_workgraph(
     atoms: Atoms = None,
 ):
     """Workgraph for Wannier90 calculation."""
-    wg = WorkGraph()
+    wg = WorkGraph("Wannier90")
     scf_node = wg.nodes.new(
         gpaw_calculator,
         name="scf",

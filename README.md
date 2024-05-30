@@ -11,7 +11,8 @@ This repository contains a collection of workgraphs for various codes.
 - [Bands structure](https://workgraph-collections.readthedocs.io/en/latest/qe/bands.html)
 - [Projected density of states (PDOS)](https://workgraph-collections.readthedocs.io/en/latest/qe/pdos.html)
 - [X-ray photoelectron spectroscopy (XPS)](https://workgraph-collections.readthedocs.io/en/latest/qe/xps.html)
-- [Wannier functions](https://workgraph-collections.readthedocs.io/en/latest/qe/wannier.html)
+- [Bader Charge](https://workgraph-collections.readthedocs.io/en/latest/qe/bader.html)
+- [Wannier90](https://workgraph-collections.readthedocs.io/en/latest/qe/wannier90.html)
 
 ## CP2K
 
@@ -36,4 +37,4 @@ This repository contains a collection of workgraphs for various codes.
 ## GPAW
 
 - [Calculator](https://workgraph-collections.readthedocs.io/en/latest/gpaw/base.html)
-- [Wannier90](https://workgraph-collections.readthedocs.io/en/latest/gpaw/wannier.html)
+- [Wannier90](https://workgraph-collections.readthedocs.io/en/latest/gpaw/wannier90.html)

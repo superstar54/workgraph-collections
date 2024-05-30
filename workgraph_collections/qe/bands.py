@@ -77,7 +77,7 @@ def bands_workgraph(
         pseudo_family = orm.load_group(pseudo_family)
         pseudos = pseudo_family.get_pseudos(structure=structure)
     # create workgraph
-    wg = WorkGraph()
+    wg = WorkGraph("BandsStructure")
     wg.context = {
         "current_structure": structure,
         "current_number_of_bands": None,

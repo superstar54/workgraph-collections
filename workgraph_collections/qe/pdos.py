@@ -57,7 +57,7 @@ def pdos_workgraph(
         pseudo_family = orm.load_group(pseudo_family)
         pseudos = pseudo_family.get_pseudos(structure=structure)
     # create workgraph
-    wg = WorkGraph()
+    wg = WorkGraph("PDOS")
     wg.context = {
         "current_number_of_bands": None,
         "scf_parent_folder": scf_parent_folder,

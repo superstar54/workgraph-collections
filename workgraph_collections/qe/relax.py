@@ -64,7 +64,7 @@ def relax_workgraph(
     """Generate RelaxWorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
-    tree = WorkGraph()
+    tree = WorkGraph("Relax")
     tree.workgraph_type = "WHILE"
     tree.max_iterations = max_iterations
     tree.conditions = ["should_run_relax.result"]
