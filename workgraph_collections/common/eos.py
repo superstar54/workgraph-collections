@@ -29,7 +29,7 @@ def fit_eos(volumes: dict = None, **scf_outputs):
     energies = []
     for key, data in scf_outputs.items():
         unit = data.dict.energy_units
-        energy = data.dict.energy * 27.21138602
+        energy = data.dict.energy
         if unit == "a.u.":  # convert to eV
             energy = energy * 27.21138602
         energies.append(energy)

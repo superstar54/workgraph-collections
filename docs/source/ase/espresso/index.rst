@@ -9,3 +9,6 @@ Here are the collection of WorkGraphs for Quantum ESPRESSO
 
    base
    atomization_energy
+   eos
+   pdos
+   bader

@@ -11,6 +11,7 @@ def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
         atoms1 = atoms.copy()
         atoms1.set_cell(atoms.cell * scales[i], scale_atoms=True)
         scaled_atoms[f"s_{i}"] = atoms1
+        volumes[f"s_{i}"] = atoms1.get_volume()
     return {"scaled_atoms": scaled_atoms, "volumes": volumes}
 
 
