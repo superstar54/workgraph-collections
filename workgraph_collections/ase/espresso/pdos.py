@@ -1,6 +1,6 @@
 from aiida_workgraph import WorkGraph, node
 from ase import Atoms
-from .base import espresso_calculator, dos_calculator, projwfc_calculator
+from .base import pw_calculator, dos_calculator, projwfc_calculator
 
 
 @node.graph_builder()
@@ -22,7 +22,7 @@ def pdos_workgraph(
     }
     # -------- scf -----------
     scf_node = wg.nodes.new(
-        espresso_calculator,
+        pw_calculator,
         name="scf",
         atoms=atoms,
         command=pw_command,
@@ -34,7 +34,7 @@ def pdos_workgraph(
     scf_node.set(scf_inputs)
     # -------- nscf -----------
     nscf_node = wg.nodes.new(
-        espresso_calculator,
+        pw_calculator,
         name="nscf",
         atoms=atoms,
         command=pw_command,

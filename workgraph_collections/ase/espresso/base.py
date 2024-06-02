@@ -3,7 +3,7 @@ from ase import Atoms
 
 
 @node(outputs=[["General", "atoms"], ["General", "results"]])
-def espresso_calculator(
+def pw_calculator(
     atoms: Atoms,
     pseudopotentials: dict,
     kpts: list = None,
@@ -82,3 +82,25 @@ def projwfc_calculator(
 
     pdos = calc.get_property("pdos", Atoms())
     return pdos
+
+
+@node()
+def pp_calculator(
+    command: str = "pp.x",
+    input_data: dict = None,
+):
+    """Run a pp calculation."""
+
+    from workgraph_collections.ase.espresso.calculators.pp import PpTemplate
+    from workgraph_collections.ase.espresso.calculators.espresso import Espresso
+    from ase.calculators.espresso import EspressoProfile
+    from ase import Atoms
+
+    # Optionally create profile to override paths in ASE configuration:
+    profile = EspressoProfile(command=command, pseudo_dir=".")
+    input_data["outdir"] = "out"
+
+    calc = Espresso(profile=profile, template=PpTemplate(), input_data=input_data)
+
+    pp = calc.get_property("pp", Atoms())
+    return pp
