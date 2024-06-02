@@ -17,7 +17,7 @@ def bader_workgraph(
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
-    wg = WorkGraph("DOS")
+    wg = WorkGraph("Bader")
     wg.context = {
         "current_number_of_bands": None,
     }

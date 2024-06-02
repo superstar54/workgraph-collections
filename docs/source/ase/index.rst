@@ -1,5 +1,5 @@
 
-ASE calculators
+ASE
 ===========================================
 
 Here are the collection of WorkGraphs for ASE calculators

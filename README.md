@@ -30,8 +30,10 @@ This repository contains a collection of workgraphs for various codes.
 ### Espresso calculator
 
 - [Calculator](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/base.html)
-- [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/eos.html)
 - [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/atomization.html)
+- [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/eos.html)
+- [Projected density of states (PDOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/pdos.html)
+- [Bader Charge](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/bader.html)
 
 
 ## GPAW
