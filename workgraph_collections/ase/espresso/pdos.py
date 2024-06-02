@@ -6,12 +6,12 @@ from .base import espresso_calculator, dos_calculator, projwfc_calculator
 @node.graph_builder()
 def pdos_workgraph(
     atoms: Atoms = None,
-    pw_command: str = None,
-    dos_command: str = None,
-    projwfc_command: str = None,
+    pw_command: str = "pw.x",
+    dos_command: str = "dos.x",
+    projwfc_command: str = "projwfc.x",
     inputs: dict = None,
     pseudopotentials: dict = None,
-    pseudo_dir: str = None,
+    pseudo_dir: str = ".",
 ):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
