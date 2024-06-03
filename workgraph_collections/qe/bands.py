@@ -137,6 +137,7 @@ def bands_workgraph(
     bands_inputs = inputs.get("bands", {"pw": {}})
     bands_inputs.update(
         {
+            "kpoints": "{{bands_kpoints}}",
             "pw.code": code,
             "pw.structure": "{{current_structure}}",
             "pw.pseudos": pseudos,
