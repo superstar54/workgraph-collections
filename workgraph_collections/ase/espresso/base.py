@@ -7,6 +7,7 @@ def pw_calculator(
     atoms: Atoms,
     pseudopotentials: dict,
     kpts: list = None,
+    kspacing: float = None,
     command: str = "pw.x",
     input_data: dict = None,
     pseudo_dir: str = "./pseudopotentials",
@@ -17,7 +18,6 @@ def pw_calculator(
     from ase.calculators.espresso import EspressoProfile
 
     input_data = {} if input_data is None else input_data
-    kpts = (1, 1, 1) if kpts is None else kpts
 
     profile = EspressoProfile(command=command, pseudo_dir=pseudo_dir)
 
@@ -33,6 +33,7 @@ def pw_calculator(
         pseudopotentials=pseudopotentials,
         input_data=input_data,
         kpts=kpts,
+        kspacing=kspacing,
     )
 
     atoms.calc = calc

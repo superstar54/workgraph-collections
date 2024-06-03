@@ -6,6 +6,14 @@
 This repository offers a variety of workgraphs tailored to different computational codes, providing practical demonstrations of how to utilize aiida-workgraph. Please note, however, that these examples are intended for illustrative purposes only and may not always represent the most correct or efficient usage.
 
 
+## Installation
+Install the latest version of the package from github:
+
+```bash
+pip install git+https://github.com/superstar54/workgraph-collections.git
+```
+
+
 ## Qauntum ESPRESSO
 
 - [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/qe/eos.html)
@@ -23,18 +31,20 @@ This repository offers a variety of workgraphs tailored to different computation
 
 ## ASE
 
-### EMT calculator
+- EMT calculator
 
-- [Calculator](https://workgraph-collections.readthedocs.io/en/latest/ase/emt/base.html)
-- [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/emt.html)
+  - [Calculator](https://workgraph-collections.readthedocs.io/en/latest/ase/emt/base.html)
+  - [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/emt.html)
 
-### Espresso calculator
+- Espresso calculator
 
-- [Calculator](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/base.html)
-- [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/atomization.html)
-- [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/eos.html)
-- [Projected density of states (PDOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/pdos.html)
-- [Bader Charge](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/bader.html)
+  - [Calculator](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/base.html)
+  - [Atomization energy](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/atomization.html)
+  - [Bands structure](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/bands.html)
+  - [Equation of state (EOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/eos.html)
+  - [Projected density of states (PDOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/pdos.html)
+  - [Bader Charge](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/bader.html)
+  - [X-ray photoelectron spectroscopy (XPS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/xps.html)
 
 
 ## GPAW
