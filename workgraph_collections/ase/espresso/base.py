@@ -14,7 +14,7 @@ def pw_calculator(
 ):
     """Run a Quantum Espresso calculation on the given atoms object."""
     from ase.io.espresso import Namelist
-    from ase_qe.espresso import Espresso
+    from ase_quantumespresso.espresso import Espresso
     from ase.calculators.espresso import EspressoProfile
 
     input_data = {} if input_data is None else input_data
@@ -48,8 +48,8 @@ def dos_calculator(
     input_data: dict = None,
 ):
     """Run a dos calculation."""
-    from ase_qe.dos import DosTemplate
-    from ase_qe.espresso import Espresso
+    from ase_quantumespresso.dos import DosTemplate
+    from ase_quantumespresso.espresso import Espresso
     from ase.calculators.espresso import EspressoProfile
     from ase import Atoms
 
@@ -70,8 +70,8 @@ def projwfc_calculator(
 ):
     """Run a projwfc calculation."""
 
-    from ase_qe.projwfc import ProjwfcTemplate
-    from ase_qe.espresso import Espresso
+    from ase_quantumespresso.projwfc import ProjwfcTemplate
+    from ase_quantumespresso.espresso import Espresso
     from ase.calculators.espresso import EspressoProfile
     from ase import Atoms
 
@@ -92,8 +92,8 @@ def pp_calculator(
 ):
     """Run a pp calculation."""
 
-    from ase_qe.pp import PpTemplate
-    from ase_qe.espresso import Espresso
+    from ase_quantumespresso.pp import PpTemplate
+    from ase_quantumespresso.espresso import Espresso
     from ase.calculators.espresso import EspressoProfile
     from ase import Atoms
 
