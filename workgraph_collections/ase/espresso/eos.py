@@ -40,11 +40,36 @@ def eos_workgraph(
     2. Run the SCF calculation for each scaled atoms.
     3. Fit the EOS.
     """
+    from .base import pw_calculator
+    from copy import deepcopy
+
+    input_data = input_data or {}
+
     wg = WorkGraph("EOS")
+    scf_node = wg.nodes.new(
+        pw_calculator,
+        name="relax",
+        atoms=atoms,
+        run_remotely=True,
+        metadata=metadata,
+        computer=computer,
+    )
+    relax_input_data = deepcopy(input_data)
+    relax_input_data.setdefault("CONTROL", {})
+    relax_input_data["CONTROL"]["calculation"] = "vc-relax"
+    scf_node.set(
+        {
+            "command": command,
+            "input_data": relax_input_data,
+            "kpts": kpts,
+            "pseudopotentials": pseudopotentials,
+            "pseudo_dir": pseudo_dir,
+        }
+    )
     scale_atoms_node = wg.nodes.new(
         generate_scaled_atoms,
         name="scale_atoms",
-        atoms=atoms,
+        atoms=scf_node.outputs["atoms"],
         scales=scales,
         computer=computer,
         metadata=metadata,

@@ -11,11 +11,10 @@ def pw_calculator(
     command: str = "pw.x",
     input_data: dict = None,
     pseudo_dir: str = "./pseudopotentials",
-):
+) -> dict:
     """Run a Quantum Espresso calculation on the given atoms object."""
     from ase.io.espresso import Namelist
-    from ase_quantumespresso.espresso import Espresso
-    from ase.calculators.espresso import EspressoProfile
+    from ase_quantumespresso.espresso import Espresso, EspressoProfile
 
     input_data = {} if input_data is None else input_data
 
@@ -39,18 +38,24 @@ def pw_calculator(
     atoms.calc = calc
 
     atoms.get_potential_energy()
-    return {"atoms": atoms, "results": atoms.calc.results}
+    results = atoms.calc.results
+    new_atoms = results.pop("atoms")
+    # we only update the position and cell of the atoms object
+    atoms.positions = new_atoms.positions
+    atoms.cell = new_atoms.cell
+    # Set atoms.calc to None to avoid pickling error
+    atoms.calc = None
+    return {"atoms": atoms, "results": results}
 
 
 @node()
 def dos_calculator(
     command: str = "dos.x",
     input_data: dict = None,
-):
+) -> dict:
     """Run a dos calculation."""
     from ase_quantumespresso.dos import DosTemplate
-    from ase_quantumespresso.espresso import Espresso
-    from ase.calculators.espresso import EspressoProfile
+    from ase_quantumespresso.espresso import Espresso, EspressoProfile
     from ase import Atoms
 
     # Optionally create profile to override paths in ASE configuration:
@@ -67,12 +72,11 @@ def dos_calculator(
 def projwfc_calculator(
     command: str = "projwfc.x",
     input_data: dict = None,
-):
+) -> dict:
     """Run a projwfc calculation."""
 
     from ase_quantumespresso.projwfc import ProjwfcTemplate
-    from ase_quantumespresso.espresso import Espresso
-    from ase.calculators.espresso import EspressoProfile
+    from ase_quantumespresso.espresso import Espresso, EspressoProfile
     from ase import Atoms
 
     # Optionally create profile to override paths in ASE configuration:
@@ -89,12 +93,11 @@ def projwfc_calculator(
 def pp_calculator(
     command: str = "pp.x",
     input_data: dict = None,
-):
+) -> dict:
     """Run a pp calculation."""
 
     from ase_quantumespresso.pp import PpTemplate
-    from ase_quantumespresso.espresso import Espresso
-    from ase.calculators.espresso import EspressoProfile
+    from ase_quantumespresso.espresso import Espresso, EspressoProfile
     from ase import Atoms
 
     # Optionally create profile to override paths in ASE configuration:
