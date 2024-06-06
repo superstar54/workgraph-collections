@@ -1,6 +1,10 @@
 sphinx_rtd_theme==1.2.2
 nbsphinx==0.9.2
 ipython
-aiida-core
 node-graph
 anywidget
+aiida-core
+aiida-workgraph
+aiida-quantumespresso
+aiida-cp2k
+ase-quantumespresso

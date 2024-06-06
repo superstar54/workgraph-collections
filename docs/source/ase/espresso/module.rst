@@ -14,6 +14,11 @@ List of all Methods
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: workgraph_collections.ase.espresso.atomization_energy
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: workgraph_collections.ase.espresso.eos
     :members:
     :undoc-members:
