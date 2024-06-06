@@ -10,3 +10,4 @@ Here are the collection of WorkGraphs for CP2K
 
    eos
    xps
+   module

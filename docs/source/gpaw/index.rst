@@ -10,3 +10,4 @@ Here are the collection of WorkGraphs for GPAW
 
    base
    wannier90
+   module

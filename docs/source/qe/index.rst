@@ -25,3 +25,4 @@ To run this tutorial, you need to install `aiida-quantumespresso` and `aiida-pse
    xps
    bader
    wannier90
+   module

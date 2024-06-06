@@ -59,7 +59,7 @@
         const { RenderUtils } = ReteRenderUtils;
         const styled = window.styled;
 
-        const workgraphData = {"name": "XPS", "uuid": "3b7becc0-21ca-11ef-bebf-906584de3e5b", "state": "CREATED", "nodes": {"scale_atoms": {"label": "scale_atoms", "inputs": [], "outputs": [{"name": "result"}], "position": [30, 30]}, "run_scf": {"label": "run_scf", "inputs": [{"name": "marked_atoms", "identifier": "General", "uuid": "3b801a02-21ca-11ef-bebf-906584de3e5b", "node_uuid": "3b8018b8-21ca-11ef-bebf-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "scale_atoms", "from_socket": "result", "from_socket_uuid": "3b7e4b6e-21ca-11ef-bebf-906584de3e5b"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "marked_atoms"}], "outputs": [{"name": "results"}], "position": [60, 60]}, "binding_energy": {"label": "binding_energy", "inputs": [{"name": "scf_outputs"}], "outputs": [], "position": [90, 90]}}, "links": [{"from_socket": "result", "from_node": "scale_atoms", "from_socket_uuid": "3b7e4b6e-21ca-11ef-bebf-906584de3e5b", "to_socket": "marked_atoms", "to_node": "run_scf", "state": false}, {"from_socket": "results", "from_node": "run_scf", "from_socket_uuid": "3b801f3e-21ca-11ef-bebf-906584de3e5b", "to_socket": "scf_outputs", "to_node": "binding_energy", "state": false}]}
+        const workgraphData = {"name": "XPS", "uuid": "10f9c6ac-23d7-11ef-a1cd-906584de3e5b", "state": "CREATED", "nodes": {"scale_atoms": {"label": "scale_atoms", "inputs": [], "outputs": [{"name": "result"}], "position": [30, 30]}, "run_scf": {"label": "run_scf", "inputs": [{"name": "marked_atoms", "identifier": "General", "uuid": "11054266-23d7-11ef-a1cd-906584de3e5b", "node_uuid": "11053f00-23d7-11ef-a1cd-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "scale_atoms", "from_socket": "result", "from_socket_uuid": "11002f38-23d7-11ef-a1cd-906584de3e5b"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "marked_atoms"}], "outputs": [{"name": "results"}], "position": [60, 60]}, "binding_energy": {"label": "binding_energy", "inputs": [{"name": "scf_outputs"}], "outputs": [], "position": [90, 90]}}, "links": [{"from_socket": "result", "from_node": "scale_atoms", "from_socket_uuid": "11002f38-23d7-11ef-a1cd-906584de3e5b", "to_socket": "marked_atoms", "to_node": "run_scf", "state": false}, {"from_socket": "results", "from_node": "run_scf", "from_socket_uuid": "11055404-23d7-11ef-a1cd-906584de3e5b", "to_socket": "scf_outputs", "to_node": "binding_energy", "state": false}]}
 
         // Define Schemes to use in vanilla JS
         const Schemes = {
@@ -177,7 +177,7 @@
 
 
             editor.use(area);
-            area.use(connection);
+            // area.use(connection);
             area.use(render);
             area.use(arrange);
             area.use(minimap);

@@ -14,3 +14,4 @@ Here are the collection of WorkGraphs for Quantum ESPRESSO
    pdos
    bader
    xps
+   module

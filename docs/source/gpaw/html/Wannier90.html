@@ -59,7 +59,7 @@
         const { RenderUtils } = ReteRenderUtils;
         const styled = window.styled;
 
-        const workgraphData = {"name": "Wannier90", "uuid": "8b8f8670-1e8e-11ef-bb6c-906584de3e5b", "state": "CREATED", "nodes": {"scf": {"label": "scf", "inputs": [{"name": "atoms", "identifier": "General", "uuid": "8b91d75e-1e8e-11ef-bb6c-906584de3e5b", "node_uuid": "8b91d5ce-1e8e-11ef-bb6c-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "outputs": [{"name": "remote_folder"}], "position": [30, 30]}, "wannier90": {"label": "wannier90", "inputs": [{"name": "parent_folder"}], "outputs": [], "position": [60, 60]}}, "links": [{"from_socket": "remote_folder", "from_node": "scf", "from_socket_uuid": "8b91f2f2-1e8e-11ef-bb6c-906584de3e5b", "to_socket": "parent_folder", "to_node": "wannier90", "state": false}]}
+        const workgraphData = {"name": "Wannier90", "uuid": "1e73ff14-23d7-11ef-b1d4-906584de3e5b", "state": "CREATED", "nodes": {"scf": {"label": "scf", "inputs": [{"name": "atoms", "identifier": "General", "uuid": "1e7851a4-23d7-11ef-b1d4-906584de3e5b", "node_uuid": "1e784f6a-23d7-11ef-b1d4-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "outputs": [{"name": "remote_folder"}], "position": [30, 30]}, "wannier90": {"label": "wannier90", "inputs": [{"name": "parent_folder"}], "outputs": [], "position": [60, 60]}}, "links": [{"from_socket": "remote_folder", "from_node": "scf", "from_socket_uuid": "1e78b4c8-23d7-11ef-b1d4-906584de3e5b", "to_socket": "parent_folder", "to_node": "wannier90", "state": false}]}
 
         // Define Schemes to use in vanilla JS
         const Schemes = {
@@ -177,7 +177,7 @@
 
 
             editor.use(area);
-            area.use(connection);
+            // area.use(connection);
             area.use(render);
             area.use(arrange);
             area.use(minimap);
