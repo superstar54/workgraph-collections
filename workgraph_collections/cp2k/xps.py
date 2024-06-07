@@ -53,7 +53,7 @@ def run_scf(
         index = int(key.split("_")[1])
         symbol = structure.sites[index].kind_name
         ch_parameters["FORCE_EVAL"]["SUBSYS"]["KIND"].append(core_hole_pseudos[symbol])
-        if core_hole_treatment.upper == "XCH":
+        if core_hole_treatment.upper() == "XCH":
             ch_parameters["FORCE_EVAL"]["DFT"].update(
                 {"UKS": True, "MULTIPLICITY": 2, "CHARGE": -1}
             )
