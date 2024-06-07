@@ -1,5 +1,9 @@
 from aiida_workgraph import node, WorkGraph
-from workgraph_collections.ase.common.xps import get_marked_atoms, binding_energy
+from workgraph_collections.ase.common.xps import (
+    get_marked_atoms,
+    get_non_equivalent_site,
+    binding_energy,
+)
 from ase import Atoms
 
 
@@ -106,6 +110,7 @@ def run_scf(
 def xps_workgraph(
     atoms: Atoms = None,
     atoms_list: list = None,
+    element_list: list = None,
     scf_inputs: str = None,
     corrections: dict = None,
     metadata: dict = None,
@@ -119,18 +124,30 @@ def xps_workgraph(
     scf_inputs = scf_inputs or {}
 
     wg = WorkGraph("XPS")
-    scale_atoms_node = wg.nodes.new(
-        get_marked_atoms,
-        name="scale_atoms",
-        atoms=atoms,
-        atoms_list=atoms_list,
-        run_remotely=True,
-        metadata=metadata,
-    )
+    if atoms_list:
+        marked_atoms_node = wg.nodes.new(
+            get_marked_atoms,
+            name="marked_atoms",
+            atoms=atoms,
+            atoms_list=atoms_list,
+            run_remotely=True,
+            metadata=metadata,
+        )
+    elif element_list:
+        marked_atoms_node = wg.nodes.new(
+            get_non_equivalent_site,
+            name="marked_atoms",
+            atoms=atoms,
+            atoms_list=atoms_list,
+            run_remotely=True,
+            metadata=metadata,
+        )
+    else:
+        raise "Either atoms_list or element_list should be provided."
     run_scf_node = wg.nodes.new(
         run_scf,
         name="run_scf",
-        marked_atoms=scale_atoms_node.outputs["result"],
+        marked_atoms=marked_atoms_node.outputs["result"],
     )
     run_scf_node.set(scf_inputs)
     wg.nodes.new(
