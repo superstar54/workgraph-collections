@@ -1,23 +1,38 @@
 from aiida_workgraph import WorkGraph, node
-from aiida.orm import Dict, StructureData, Code
-from workgraph_collections.common.xps import get_marked_structures, binding_energy
+from aiida.orm import List, Dict, StructureData, Code, Bool
+from workgraph_collections.common.xps import binding_energy
+from aiida_quantumespresso.workflows.functions.get_xspectra_structures import (
+    get_xspectra_structures,
+)
+from aiida_quantumespresso.workflows.functions.get_marked_structures import (
+    get_marked_structures,
+)
 
 
 @node.graph_builder(outputs=[["context.scf", "result"]])
 def run_scf(
-    structures: StructureData = None,
+    structure,
     code: Code = None,
     parameters: dict = None,
     basis_pseudo_files: dict = None,
     core_hole_pseudos: dict = None,
     core_hole_treatment: str = "xch",
+    is_molecule: bool = None,
     metadata: dict = None,
+    **marked_structures,
 ):
     from aiida_cp2k.calculations import Cp2kCalculation
     from copy import deepcopy
 
     wg = WorkGraph("run_scf")
+    if is_molecule:
+        parameters["FORCE_EVAL"]["DFT"].setdefault("POISSON", {})
+        parameters["FORCE_EVAL"]["DFT"]["POISSON"].update(
+            {"PERIODIC": None, "PSOLVER": "MT"}
+        )
+        core_hole_treatment = "FULL"
     # ground state
+    supercell = marked_structures.pop("supercell", structure)
     scf_ground = wg.nodes.new(Cp2kCalculation, name="scf_ground")
     scf_ground.set(
         {
@@ -25,14 +40,18 @@ def run_scf(
             "parameters": Dict(parameters),
             "metadata": metadata,
             "file": basis_pseudo_files,
-            "structure": structures.pop("ground"),
+            "structure": supercell,
         }
     )
     scf_ground.to_context = [["output_parameters", "scf.ground"]]
+    # remove unwanted data
+    for site in ["output_parameters", "supercell", "standardized_structure"]:
+        marked_structures.pop(site, None)
     # excited state node
-    for key, structure in structures.items():
+    for key, marked_structure in marked_structures.items():
         ch_parameters = deepcopy(parameters)
-        symbol = key.split("_")[0]
+        index = int(key.split("_")[1])
+        symbol = structure.sites[index].kind_name
         ch_parameters["FORCE_EVAL"]["SUBSYS"]["KIND"].append(core_hole_pseudos[symbol])
         if core_hole_treatment.upper == "XCH":
             ch_parameters["FORCE_EVAL"]["DFT"].update(
@@ -49,7 +68,7 @@ def run_scf(
                 "parameters": Dict(ch_parameters),
                 "metadata": metadata,
                 "file": basis_pseudo_files,
-                "structure": structure,
+                "structure": marked_structure,
             }
         )
         scf_ch.to_context = [["output_parameters", f"scf.{key}"]]
@@ -61,11 +80,13 @@ def xps_workgraph(
     structure: StructureData = None,
     code: Code = None,
     atoms_list: list = None,
+    element_list: list = None,
     parameters: dict = None,
     basis_pseudo_files: dict = None,
     core_hole_pseudos: dict = None,
     core_hole_treatment: str = "xch",
     correction_energies: dict = None,
+    is_molecule: bool = None,
     metadata: dict = None,
 ):
     """Workgraph for XPS calculation.
@@ -73,27 +94,44 @@ def xps_workgraph(
     2. Run the SCF calculation for ground state, and each marked structure with core hole.
     3. Calculate the binding energy.
     """
+
     wg = WorkGraph("XPS")
-    structures_node = wg.nodes.new(
-        get_marked_structures,
-        name="get_marked_structures",
-        structure=structure,
-        atoms_list=atoms_list,
-    )
+    if atoms_list:
+        structures_node = wg.nodes.new(
+            get_marked_structures,
+            name="marked_structures",
+            structure=structure,
+            atoms_list=atoms_list,
+        )
+    else:
+        structures_node = wg.nodes.new(
+            get_xspectra_structures,
+            name="marked_structures",
+            structure=structure,
+            kwargs={
+                "absorbing_elements_list": List(element_list),
+                "is_molecule_input": Bool(is_molecule),
+            },
+        )
+    # add a output socket manually
+    structures_node.outputs.new("General", "output_parameters")
     scf_node = wg.nodes.new(
         run_scf,
         name="run_scf",
+        structure=structure,
         code=code,
         parameters=parameters,
         basis_pseudo_files=basis_pseudo_files,
         core_hole_pseudos=core_hole_pseudos,
         core_hole_treatment=core_hole_treatment,
         metadata=metadata,
-        structures=structures_node.outputs["structures"],
+        is_molecule=is_molecule,
+        marked_structures=structures_node.outputs["_outputs"],
     )
     wg.nodes.new(
         binding_energy,
         name="binding_energy",
+        sites_info=structures_node.outputs["output_parameters"],
         scf_outputs=scf_node.outputs["result"],
         corrections=correction_energies,
         energy_units="a.u",
