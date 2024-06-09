@@ -25,10 +25,10 @@ def bands_workgraph(
     density: int = None,
     kpoints_path: str = None,
 ):
-    """Generate PdosWorkGraph."""
+    """Generate BandsStructure WorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
-    wg = WorkGraph("PDOS")
+    wg = WorkGraph("BandsStructure")
     wg.context = {
         "current_number_of_bands": None,
     }
