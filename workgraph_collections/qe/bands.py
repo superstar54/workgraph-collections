@@ -1,23 +1,26 @@
 """BandsWorkGraph."""
 
 from aiida import orm
-from aiida_workgraph import WorkGraph
-from aiida_workgraph.decorator import node
+from aiida_workgraph import WorkGraph, node, build_node
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 from aiida_quantumespresso.workflows.pw.relax import PwRelaxWorkChain
 from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis import (
     seekpath_structure_analysis,
 )
 
+SeekpathNode = build_node(
+    seekpath_structure_analysis,
+    outputs=[["General", "primitive_structure"], ["General", "explicit_kpoints"]],
+)
+
 
 @node()
-def inspect_relax(outputs):
+def inspect_relax(relax_outputs):
     """Inspect relax calculation."""
-    current_number_of_bands = outputs.output_parameters.get_dict()["number_of_bands"]
-    return {
-        "current_number_of_bands": orm.Int(current_number_of_bands),
-        "current_structure": outputs.output_structure,
-    }
+    current_number_of_bands = relax_outputs.output_parameters.get_dict()[
+        "number_of_bands"
+    ]
+    return orm.Int(current_number_of_bands)
 
 
 @node.calcfunction()
@@ -28,14 +31,6 @@ def generate_scf_parameters(parameters, current_number_of_bands=None):
     if not current_number_of_bands:
         current_number_of_bands = parameters["SYSTEM"].get("nbnd")
     return orm.Dict(parameters)
-
-
-@node()
-def inspect_scf(outputs):
-    """Inspect scf calculation.
-    outputs is the outputs of the scf calculation."""
-    current_number_of_bands = outputs.output_parameters.get_dict()["number_of_bands"]
-    return {"current_number_of_bands": orm.Int(current_number_of_bands)}
 
 
 @node.calcfunction()
@@ -72,52 +67,51 @@ def bands_workgraph(
 ) -> WorkGraph:
     """BandsWorkGraph."""
     inputs = {} if inputs is None else inputs
+    bands_kpoints = None
+    current_number_of_bands = None
     # Load the pseudopotential family.
     if pseudo_family is not None:
         pseudo_family = orm.load_group(pseudo_family)
         pseudos = pseudo_family.get_pseudos(structure=structure)
     # create workgraph
     wg = WorkGraph("BandsStructure")
-    wg.context = {
-        "current_structure": structure,
-        "current_number_of_bands": None,
-        "bands_kpoints": None,
-    }
+    wg.context = {}
     # ------- relax -----------
-    relax_node = wg.nodes.new(PwRelaxWorkChain, name="relax")
-    relax_inputs = PwRelaxWorkChain.get_protocol_inputs(protocol)
-    relax_inputs = inputs.get("relax", {})
-    relax_inputs.update(
-        {
-            "structure": "{{current_structure}}",
-            "base.pw.code": code,
-            "base.pw.pseudos": pseudos,
-        }
-    )
-    relax_node.set(relax_inputs)
-    inspect_relax_node = wg.nodes.new(inspect_relax, name="inspect_relax")
-    wg.links.new(relax_node.outputs["_outputs"], inspect_relax_node.inputs["outputs"])
-    inspect_relax_node.to_context = [
-        ["current_number_of_bands", "current_number_of_bands"],
-        ["current_structure", "current_structure"],
-    ]
-    # -------- seekpath -----------
-    seekpath_node = wg.nodes.new(
-        seekpath_structure_analysis,
-        name="seekpath",
-        structure="{{current_structure}}",
-        kwargs={"reference_distance": orm.Float(bands_kpoints_distance)},
-    )
-    seekpath_node.to_context = [
-        ["primitive_structure", "current_structure"],
-        ["explicit_kpoints", "bands_kpoints"],
-    ]
+    if run_relax:
+        relax_node = wg.nodes.new(PwRelaxWorkChain, name="relax", structure=structure)
+        relax_inputs = PwRelaxWorkChain.get_protocol_inputs(protocol)
+        relax_inputs = inputs.get("relax", {})
+        relax_inputs.update(
+            {
+                "base.pw.code": code,
+                "base.pw.pseudos": pseudos,
+            }
+        )
+        relax_node.set(relax_inputs)
+        # override the structure
+        structure = relax_node.outputs["output_structure"]
+        inspect_relax_node = wg.nodes.new(
+            inspect_relax,
+            name="inspect_relax",
+            relax_outputs=relax_node.outputs["_outputs"],
+        )
+        current_number_of_bands = inspect_relax_node.outputs["result"]
+    if bands_kpoints_distance:
+        # -------- seekpath -----------
+        seekpath_node = wg.nodes.new(
+            SeekpathNode,
+            name="seekpath",
+            structure=structure,
+            kwargs={"reference_distance": orm.Float(bands_kpoints_distance)},
+        )
+        structure = seekpath_node.outputs["primitive_structure"]
+        bands_kpoints = seekpath_node.outputs["explicit_kpoints"]
     # -------- scf -----------
     scf_inputs = inputs.get("scf", {"pw": {}})
     scf_inputs.update(
         {
             "pw.code": code,
-            "pw.structure": "{{current_structure}}",
+            "pw.structure": structure,
             "pw.pseudos": pseudos,
         }
     )
@@ -127,19 +121,16 @@ def bands_workgraph(
         generate_scf_parameters,
         name="scf_parameters",
         parameters=scf_inputs["pw"].get("parameters", {}),
-        current_number_of_bands="{{current_number_of_bands}}",
+        current_number_of_bands=current_number_of_bands,
     )
     wg.links.new(scf_parameters.outputs[0], scf_node.inputs["pw.parameters"])
-    inspect_scf_node = wg.nodes.new(inspect_scf, name="inspect_scf")
-    wg.links.new(scf_node.outputs["_outputs"], inspect_scf_node.inputs["outputs"])
     # -------- bands -----------
-    bands_node = wg.nodes.new(PwBaseWorkChain, name="bands")
+    bands_node = wg.nodes.new(PwBaseWorkChain, name="bands", kpoints=bands_kpoints)
     bands_inputs = inputs.get("bands", {"pw": {}})
     bands_inputs.update(
         {
-            "kpoints": "{{bands_kpoints}}",
             "pw.code": code,
-            "pw.structure": "{{current_structure}}",
+            "pw.structure": structure,
             "pw.pseudos": pseudos,
         }
     )
@@ -158,15 +149,5 @@ def bands_workgraph(
         bands_parameters.inputs["output_parameters"],
     )
     wg.links.new(bands_parameters.outputs[0], bands_node.inputs["pw.parameters"])
-    # -------- dependences -----------
-    seekpath_node.wait = ["inspect_relax"]
-    scf_parameters.wait = ["inspect_relax", "seekpath"]
-    bands_parameters.wait = ["inspect_scf"]
-    # delete nodes
-    if not run_relax:
-        wg.nodes.delete("relax")
-        wg.nodes.delete("inspect_relax")
-    if not bands_kpoints_distance:
-        wg.nodes.delete("seekpath")
     # export workgraph
     return wg

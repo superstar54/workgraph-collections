@@ -60,7 +60,6 @@ def pdos_workgraph(
     wg = WorkGraph("PDOS")
     wg.context = {
         "current_number_of_bands": None,
-        "scf_parent_folder": scf_parent_folder,
     }
     # -------- scf -----------
     if run_scf:
@@ -70,6 +69,7 @@ def pdos_workgraph(
             {"pw.structure": structure, "pw.code": pw_code, "pw.pseudos": pseudos}
         )
         scf_node.set(scf_inputs)
+        scf_parent_folder = scf_node.outputs["remote_folder"]
     # -------- nscf -----------
     nscf_node = wg.nodes.new(PwBaseWorkChain, name="nscf")
     nscf_inputs = inputs.get("nscf", {})
@@ -82,10 +82,6 @@ def pdos_workgraph(
         }
     )
     nscf_node.set(nscf_inputs)
-    if run_scf:
-        wg.links.new(
-            scf_node.outputs["remote_folder"], nscf_node.inputs["pw.parent_folder"]
-        )
     # -------- dos -----------
     dos1 = wg.nodes.new(DosCalculation, name="dos")
     dos_input = inputs.get("dos", {})
