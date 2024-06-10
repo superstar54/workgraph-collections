@@ -8,6 +8,8 @@ from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis im
     seekpath_structure_analysis,
 )
 
+# we build a SeekpathNode Node
+# Add only two outputs port here, because we only use these outputs in the following.
 SeekpathNode = build_node(
     seekpath_structure_analysis,
     outputs=[["General", "primitive_structure"], ["General", "explicit_kpoints"]],
@@ -15,41 +17,34 @@ SeekpathNode = build_node(
 
 
 @node()
-def inspect_relax(relax_outputs):
+def inspect_relax(parameters):
     """Inspect relax calculation."""
-    current_number_of_bands = relax_outputs.output_parameters.get_dict()[
-        "number_of_bands"
-    ]
-    return orm.Int(current_number_of_bands)
+    return orm.Int(parameters.get_dict()["number_of_bands"])
 
 
 @node.calcfunction()
-def generate_scf_parameters(parameters, current_number_of_bands=None):
-    """Generate scf parameters from relax calculation."""
+def update_scf_parameters(parameters, current_number_of_bands=None):
+    """Update scf parameters."""
     parameters = parameters.get_dict()
-    parameters.setdefault("SYSTEM", {})
-    if not current_number_of_bands:
-        current_number_of_bands = parameters["SYSTEM"].get("nbnd")
+    parameters.setdefault("SYSTEM", {}).setdefault("nbnd", current_number_of_bands)
     return orm.Dict(parameters)
 
 
 @node.calcfunction()
-def generate_bands_parameters(parameters, output_parameters, nbands_factor=None):
-    """Generate bands parameters from SCF calculation."""
+def update_bands_parameters(parameters, scf_parameters, nbands_factor=None):
+    """Update bands parameters."""
     parameters = parameters.get_dict()
     parameters.setdefault("SYSTEM", {})
+    scf_parameters = scf_parameters.get_dict()
     if nbands_factor:
         factor = nbands_factor.value
-        parameters = output_parameters.get_dict()
-        nbands = int(parameters["number_of_bands"])
-        nelectron = int(parameters["number_of_electrons"])
+        nbands = int(scf_parameters["number_of_bands"])
+        nelectron = int(scf_parameters["number_of_electrons"])
         nbnd = max(int(0.5 * nelectron * factor), int(0.5 * nelectron) + 4, nbands)
         parameters["SYSTEM"]["nbnd"] = nbnd
     # Otherwise set the current number of bands, unless explicitly set in the inputs
     else:
-        parameters["SYSTEM"].setdefault(
-            "nbnd", output_parameters.base.attributes.get("number_of_bands")
-        )
+        parameters["SYSTEM"].setdefault("nbnd", scf_parameters["number_of_bands"])
     return orm.Dict(parameters)
 
 
@@ -57,27 +52,28 @@ def generate_bands_parameters(parameters, output_parameters, nbands_factor=None)
 def bands_workgraph(
     structure: orm.StructureData = None,
     code: orm.Code = None,
-    inputs: dict = None,
     pseudo_family: str = None,
     pseudos: dict = None,
+    inputs: dict = None,
     run_relax: bool = False,
-    bands_kpoints_distance: float = 0.1,
-    nbands_factor: orm.Float = None,
+    bands_kpoints_distance: float = None,
+    nbands_factor: float = None,
 ) -> WorkGraph:
     """BandsWorkGraph."""
     inputs = {} if inputs is None else inputs
+    # Initialize some variables which can be overridden in the following
     bands_kpoints = None
     current_number_of_bands = None
     # Load the pseudopotential family.
     if pseudo_family is not None:
         pseudo_family = orm.load_group(pseudo_family)
         pseudos = pseudo_family.get_pseudos(structure=structure)
-    # create workgraph
+    # Initialize the workgraph
     wg = WorkGraph("BandsStructure")
-    wg.context = {}
     # ------- relax -----------
     if run_relax:
         relax_node = wg.nodes.new(PwRelaxWorkChain, name="relax", structure=structure)
+        # retrieve the relax inputs from the inputs, and set the relax inputs
         relax_inputs = inputs.get("relax", {})
         relax_inputs.update(
             {
@@ -86,16 +82,17 @@ def bands_workgraph(
             }
         )
         relax_node.set(relax_inputs)
-        # override the structure
+        # override the input structure with the relaxed structure
         structure = relax_node.outputs["output_structure"]
+        # -------- inspect_relax -----------
         inspect_relax_node = wg.nodes.new(
             inspect_relax,
             name="inspect_relax",
-            relax_outputs=relax_node.outputs["_outputs"],
+            parameters=relax_node.outputs["output_parameters"],
         )
         current_number_of_bands = inspect_relax_node.outputs["result"]
-    if bands_kpoints_distance:
-        # -------- seekpath -----------
+    # -------- seekpath -----------
+    if bands_kpoints_distance is not None:
         seekpath_node = wg.nodes.new(
             SeekpathNode,
             name="seekpath",
@@ -103,49 +100,46 @@ def bands_workgraph(
             kwargs={"reference_distance": orm.Float(bands_kpoints_distance)},
         )
         structure = seekpath_node.outputs["primitive_structure"]
+        # override the bands_kpoints
         bands_kpoints = seekpath_node.outputs["explicit_kpoints"]
     # -------- scf -----------
+    # retrieve the scf inputs from the inputs, and update the scf parameters
     scf_inputs = inputs.get("scf", {"pw": {}})
+    scf_parameters = wg.nodes.new(
+        update_scf_parameters,
+        name="scf_parameters",
+        parameters=scf_inputs["pw"].get("parameters", {}),
+        current_number_of_bands=current_number_of_bands,
+    )
+    scf_node = wg.nodes.new(PwBaseWorkChain, name="scf")
+    # update inputs
     scf_inputs.update(
         {
             "pw.code": code,
             "pw.structure": structure,
             "pw.pseudos": pseudos,
+            "pw.parameters": scf_parameters.outputs[0],
         }
     )
-    scf_node = wg.nodes.new(PwBaseWorkChain, name="scf")
     scf_node.set(scf_inputs)
-    scf_parameters = wg.nodes.new(
-        generate_scf_parameters,
-        name="scf_parameters",
-        parameters=scf_inputs["pw"].get("parameters", {}),
-        current_number_of_bands=current_number_of_bands,
-    )
-    wg.links.new(scf_parameters.outputs[0], scf_node.inputs["pw.parameters"])
     # -------- bands -----------
-    bands_node = wg.nodes.new(PwBaseWorkChain, name="bands", kpoints=bands_kpoints)
     bands_inputs = inputs.get("bands", {"pw": {}})
+    bands_parameters = wg.nodes.new(
+        update_bands_parameters,
+        name="bands_parameters",
+        parameters=bands_inputs["pw"].get("parameters", {}),
+        nbands_factor=nbands_factor,
+        scf_parameters=scf_node.outputs["output_parameters"],
+    )
+    bands_node = wg.nodes.new(PwBaseWorkChain, name="bands", kpoints=bands_kpoints)
     bands_inputs.update(
         {
             "pw.code": code,
             "pw.structure": structure,
             "pw.pseudos": pseudos,
+            "pw.parent_folder": scf_node.outputs["remote_folder"],
+            "pw.parameters": bands_parameters.outputs[0],
         }
     )
     bands_node.set(bands_inputs)
-    bands_parameters = wg.nodes.new(
-        generate_bands_parameters,
-        name="bands_parameters",
-        parameters=bands_inputs["pw"].get("parameters", {}),
-        nbands_factor=nbands_factor,
-    )
-    wg.links.new(
-        scf_node.outputs["remote_folder"], bands_node.inputs["pw.parent_folder"]
-    )
-    wg.links.new(
-        scf_node.outputs["output_parameters"],
-        bands_parameters.inputs["output_parameters"],
-    )
-    wg.links.new(bands_parameters.outputs[0], bands_node.inputs["pw.parameters"])
-    # export workgraph
     return wg
