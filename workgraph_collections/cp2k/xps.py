@@ -1,4 +1,4 @@
-from aiida_workgraph import WorkGraph, node
+from aiida_workgraph import WorkGraph, node, build_node
 from aiida.orm import List, Dict, StructureData, Code, Bool
 from workgraph_collections.common.xps import binding_energy
 from aiida_quantumespresso.workflows.functions.get_xspectra_structures import (
@@ -6,6 +6,16 @@ from aiida_quantumespresso.workflows.functions.get_xspectra_structures import (
 )
 from aiida_quantumespresso.workflows.functions.get_marked_structures import (
     get_marked_structures,
+)
+
+# add a output socket manually
+GetXspectraStructureNode = build_node(
+    get_xspectra_structures,
+    outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
+)
+GetMarkedStructuresNode = build_node(
+    get_marked_structures,
+    outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
 )
 
 
@@ -24,6 +34,8 @@ def run_scf(
     from aiida_cp2k.calculations import Cp2kCalculation
     from copy import deepcopy
 
+    output_parameters = marked_structures.pop("output_parameters", Dict({})).get_dict()
+    sites_info = output_parameters["equivalent_sites_data"]
     wg = WorkGraph("run_scf")
     if is_molecule:
         parameters["FORCE_EVAL"]["DFT"].setdefault("POISSON", {})
@@ -44,14 +56,11 @@ def run_scf(
         }
     )
     scf_ground.to_context = [["output_parameters", "scf.ground"]]
-    # remove unwanted data
-    for site in ["output_parameters", "supercell", "standardized_structure"]:
-        marked_structures.pop(site, None)
+    marked_structures = marked_structures["marked_structures"]
     # excited state node
     for key, marked_structure in marked_structures.items():
         ch_parameters = deepcopy(parameters)
-        index = int(key.split("_")[1])
-        symbol = structure.sites[index].kind_name
+        symbol = sites_info[key]["symbol"]
         ch_parameters["FORCE_EVAL"]["SUBSYS"]["KIND"].append(core_hole_pseudos[symbol])
         if core_hole_treatment.upper() == "XCH":
             ch_parameters["FORCE_EVAL"]["DFT"].update(
@@ -98,14 +107,14 @@ def xps_workgraph(
     wg = WorkGraph("XPS")
     if atoms_list:
         structures_node = wg.nodes.new(
-            get_marked_structures,
+            GetMarkedStructuresNode,
             name="marked_structures",
             structure=structure,
             atoms_list=atoms_list,
         )
     else:
         structures_node = wg.nodes.new(
-            get_xspectra_structures,
+            GetXspectraStructureNode,
             name="marked_structures",
             structure=structure,
             kwargs={
@@ -113,8 +122,6 @@ def xps_workgraph(
                 "is_molecule_input": Bool(is_molecule),
             },
         )
-    # add a output socket manually
-    structures_node.outputs.new("General", "output_parameters")
     scf_node = wg.nodes.new(
         run_scf,
         name="run_scf",

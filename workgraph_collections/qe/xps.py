@@ -8,13 +8,14 @@ from aiida_quantumespresso.workflows.functions.get_marked_structures import (
     get_marked_structures,
 )
 
+# add a output socket manually
 GetXspectraStructureNode = build_node(
     get_xspectra_structures,
-    outputs=[["General", "output_parameters"]],
+    outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
 )
 GetMarkedStructuresNode = build_node(
     get_marked_structures,
-    outputs=[["General", "output_parameters"]],
+    outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
 )
 
 
@@ -59,8 +60,7 @@ def run_scf(
     )
     pw_ground.to_context = [["output_parameters", "scf.ground"]]
     # remove unwanted data
-    for site in ["standardized_structure"]:
-        marked_structures.pop(site, None)
+    marked_structures = marked_structures["marked_structures"]
     # excited state node
     for key, marked_structure in marked_structures.items():
         pseudos1 = pseudos.copy()

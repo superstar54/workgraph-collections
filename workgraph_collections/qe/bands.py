@@ -57,7 +57,6 @@ def generate_bands_parameters(parameters, output_parameters, nbands_factor=None)
 def bands_workgraph(
     structure: orm.StructureData = None,
     code: orm.Code = None,
-    protocol: str = "fast",
     inputs: dict = None,
     pseudo_family: str = None,
     pseudos: dict = None,
@@ -79,7 +78,6 @@ def bands_workgraph(
     # ------- relax -----------
     if run_relax:
         relax_node = wg.nodes.new(PwRelaxWorkChain, name="relax", structure=structure)
-        relax_inputs = PwRelaxWorkChain.get_protocol_inputs(protocol)
         relax_inputs = inputs.get("relax", {})
         relax_inputs.update(
             {
