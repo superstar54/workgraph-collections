@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rete.js with React in Vanilla JS</title>
+    <!-- Import React, ReactDOM, and Babel from CDN -->
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-is/18.2.0/umd/react-is.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/styled-components@5.3.6/dist/styled-components.min.js"></script>
+    <script src="https://unpkg.com/elkjs@0.8.2/lib/elk.bundled.js"></script>
+
+    <!-- Import Rete.js and its plugins from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/rete@2.0.3/rete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-area-plugin@2.0.3/rete-area-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-connection-plugin@2.0.2/rete-connection-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-render-utils@2.0.2/rete-render-utils.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-react-plugin@2.0.5/rete-react-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-auto-arrange-plugin@2.0.1/rete-auto-arrange-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-minimap-plugin@2.0.1/rete-minimap-plugin.min.js"></script>
+
+    <style>
+        .App {
+            font-family: sans-serif;
+            background: rgb(200, 190, 190);
+        }
+        .rete {
+          position: relative;
+          font-size: 1rem;
+          margin: 1em;
+          border-radius: 1em;
+          text-align: left;
+        }
+        #fullscreen-btn {
+            margin-left: 10px;
+        }
+        body {
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+
+        const { useState, useRef, useEffect } = React;
+        const { createRoot } = ReactDOM;
+        const { NodeEditor, ClassicPreset } = Rete;
+        const { AreaPlugin, AreaExtensions } = ReteAreaPlugin;
+        const { ConnectionPlugin, Presets: ConnectionPresets } = ReteConnectionPlugin;
+        const { ReactPlugin, Presets } = ReteReactPlugin;
+        const { AutoArrangePlugin, Presets: ArrangePresets, ArrangeAppliers} = ReteAutoArrangePlugin;
+        const { MinimapExtra, MinimapPlugin } = ReteMinimapPlugin;
+        const { RenderUtils } = ReteRenderUtils;
+        const styled = window.styled;
+
+        const workgraphData = {"name": "Wannier90-Bands-GaAs", "uuid": "219a61e4-2736-11ef-8d2b-58112291ee1a", "state": "CREATED", "nodes": {"seekpath": {"label": "seekpath", "inputs": [{"name": "structure", "identifier": "General", "uuid": "219cfb66-2736-11ef-8d2b-58112291ee1a", "node_uuid": "219cf53a-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "outputs": [{"name": "parameters"}, {"name": "primitive_structure"}, {"name": "primitive_structure"}, {"name": "primitive_structure"}, {"name": "primitive_structure"}], "position": [30, 30]}, "inspect_seekpath": {"label": "inspect_seekpath", "inputs": [{"name": "parameters", "identifier": "General", "uuid": "219f475e-2736-11ef-8d2b-58112291ee1a", "node_uuid": "219f418c-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "seekpath", "from_socket": "parameters", "from_socket_uuid": "219cfe04-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "parameters"}], "outputs": [{"name": "kpoint_path"}, {"name": "kpoint_path"}], "position": [60, 60]}, "scf": {"label": "scf", "inputs": [{"name": "pw", "identifier": "General", "uuid": "21a2091c-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a2017e-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.structure", "identifier": "General", "uuid": "21a226fe-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a2017e-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "seekpath", "from_socket": "primitive_structure", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.parameters", "identifier": "General", "uuid": "21a227f8-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a2017e-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.pseudos", "identifier": "General", "uuid": "21a22bf4-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a2017e-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.structure"}], "outputs": [{"name": "remote_folder"}, {"name": "output_parameters"}], "position": [90, 90]}, "nscf": {"label": "nscf", "inputs": [{"name": "pw", "identifier": "General", "uuid": "21a48160-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a47a94-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.structure", "identifier": "General", "uuid": "21a49d94-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a47a94-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "seekpath", "from_socket": "primitive_structure", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.parameters", "identifier": "General", "uuid": "21a49e7a-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a47a94-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.pseudos", "identifier": "General", "uuid": "21a4a230-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a47a94-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw.structure"}, {"name": "pw.parent_folder"}], "outputs": [{"name": "remote_folder"}, {"name": "output_parameters"}, {"name": "remote_folder"}], "position": [120, 120]}, "projwfc": {"label": "projwfc", "inputs": [{"name": "projwfc", "identifier": "General", "uuid": "21a769a2-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a76286-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "projwfc.parent_folder", "identifier": "General", "uuid": "21a787ca-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a76286-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "nscf", "from_socket": "remote_folder", "from_socket_uuid": "21a4a8e8-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "projwfc.parent_folder"}], "outputs": [{"name": "bands"}, {"name": "projections"}], "position": [150, 150]}, "wannier90_pp_parameters": {"label": "wannier90_pp_parameters", "inputs": [{"name": "parameters", "identifier": "General", "uuid": "21a9dfde-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21a9da5c-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "scf_output_parameters"}, {"name": "nscf_output_parameters"}], "outputs": [{"name": "result"}], "position": [180, 180]}, "wannier90_pp": {"label": "wannier90_pp", "inputs": [{"name": "wannier90", "identifier": "General", "uuid": "21ac841e-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21ac7956-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.structure", "identifier": "General", "uuid": "21ac9fc6-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21ac7956-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "seekpath", "from_socket": "primitive_structure", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.parameters", "identifier": "General", "uuid": "21aca0ca-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21ac7956-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "wannier90_pp_parameters", "from_socket": "result", "from_socket_uuid": "21a9e1e6-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.kpoints", "identifier": "General", "uuid": "21aca66a-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21ac7956-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.structure"}, {"name": "wannier90.kpoint_path"}, {"name": "wannier90.parameters"}], "outputs": [{"name": "nnkp_file"}], "position": [210, 210]}, "pw2wannier90": {"label": "pw2wannier90", "inputs": [{"name": "pw2wannier90", "identifier": "General", "uuid": "21af86aa-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21af7c78-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw2wannier90.parent_folder", "identifier": "General", "uuid": "21afb44a-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21af7c78-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "nscf", "from_socket": "remote_folder", "from_socket_uuid": "21a4a8e8-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw2wannier90.nnkp_file", "identifier": "General", "uuid": "21afb5c6-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21af7c78-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "wannier90_pp", "from_socket": "nnkp_file", "from_socket_uuid": "21acb42a-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "pw2wannier90.nnkp_file"}, {"name": "pw2wannier90.parent_folder"}, {"name": "bands"}, {"name": "bands_projections"}], "outputs": [{"name": "remote_folder"}], "position": [240, 240]}, "wannier90": {"label": "wannier90", "inputs": [{"name": "wannier90", "identifier": "General", "uuid": "21b371f2-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21b367a2-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.structure", "identifier": "General", "uuid": "21b38e44-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21b367a2-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "seekpath", "from_socket": "primitive_structure", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.parameters", "identifier": "General", "uuid": "21b38f34-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21b367a2-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.kpoints", "identifier": "General", "uuid": "21b39402-2736-11ef-8d2b-58112291ee1a", "node_uuid": "21b367a2-2736-11ef-8d2b-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "wannier90.structure"}, {"name": "wannier90.remote_input_folder"}, {"name": "wannier90.kpoint_path"}], "outputs": [], "position": [270, 270]}}, "links": [{"from_socket": "parameters", "from_node": "seekpath", "from_socket_uuid": "219cfe04-2736-11ef-8d2b-58112291ee1a", "to_socket": "parameters", "to_node": "inspect_seekpath", "state": false}, {"from_socket": "primitive_structure", "from_node": "seekpath", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a", "to_socket": "pw.structure", "to_node": "scf", "state": false}, {"from_socket": "primitive_structure", "from_node": "seekpath", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a", "to_socket": "pw.structure", "to_node": "nscf", "state": false}, {"from_socket": "remote_folder", "from_node": "scf", "from_socket_uuid": "21a23324-2736-11ef-8d2b-58112291ee1a", "to_socket": "pw.parent_folder", "to_node": "nscf", "state": false}, {"from_socket": "remote_folder", "from_node": "nscf", "from_socket_uuid": "21a4a8e8-2736-11ef-8d2b-58112291ee1a", "to_socket": "projwfc.parent_folder", "to_node": "projwfc", "state": false}, {"from_socket": "output_parameters", "from_node": "scf", "from_socket_uuid": "21a2346e-2736-11ef-8d2b-58112291ee1a", "to_socket": "scf_output_parameters", "to_node": "wannier90_pp_parameters", "state": false}, {"from_socket": "output_parameters", "from_node": "nscf", "from_socket_uuid": "21a4aa0a-2736-11ef-8d2b-58112291ee1a", "to_socket": "nscf_output_parameters", "to_node": "wannier90_pp_parameters", "state": false}, {"from_socket": "primitive_structure", "from_node": "seekpath", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a", "to_socket": "wannier90.structure", "to_node": "wannier90_pp", "state": false}, {"from_socket": "kpoint_path", "from_node": "inspect_seekpath", "from_socket_uuid": "219f4876-2736-11ef-8d2b-58112291ee1a", "to_socket": "wannier90.kpoint_path", "to_node": "wannier90_pp", "state": false}, {"from_socket": "result", "from_node": "wannier90_pp_parameters", "from_socket_uuid": "21a9e1e6-2736-11ef-8d2b-58112291ee1a", "to_socket": "wannier90.parameters", "to_node": "wannier90_pp", "state": false}, {"from_socket": "nnkp_file", "from_node": "wannier90_pp", "from_socket_uuid": "21acb42a-2736-11ef-8d2b-58112291ee1a", "to_socket": "pw2wannier90.nnkp_file", "to_node": "pw2wannier90", "state": false}, {"from_socket": "remote_folder", "from_node": "nscf", "from_socket_uuid": "21a4a8e8-2736-11ef-8d2b-58112291ee1a", "to_socket": "pw2wannier90.parent_folder", "to_node": "pw2wannier90", "state": false}, {"from_socket": "bands", "from_node": "projwfc", "from_socket_uuid": "21a78d74-2736-11ef-8d2b-58112291ee1a", "to_socket": "bands", "to_node": "pw2wannier90", "state": false}, {"from_socket": "projections", "from_node": "projwfc", "from_socket_uuid": "21a78d06-2736-11ef-8d2b-58112291ee1a", "to_socket": "bands_projections", "to_node": "pw2wannier90", "state": false}, {"from_socket": "primitive_structure", "from_node": "seekpath", "from_socket_uuid": "219cfd32-2736-11ef-8d2b-58112291ee1a", "to_socket": "wannier90.structure", "to_node": "wannier90", "state": false}, {"from_socket": "remote_folder", "from_node": "pw2wannier90", "from_socket_uuid": "21afbd28-2736-11ef-8d2b-58112291ee1a", "to_socket": "wannier90.remote_input_folder", "to_node": "wannier90", "state": false}, {"from_socket": "kpoint_path", "from_node": "inspect_seekpath", "from_socket_uuid": "219f4876-2736-11ef-8d2b-58112291ee1a", "to_socket": "wannier90.kpoint_path", "to_node": "wannier90", "state": false}]}
+
+        // Define Schemes to use in vanilla JS
+        const Schemes = {
+            Node: ClassicPreset.Node,
+            Connection: ClassicPreset.Connection
+        };
+
+        class Node extends ClassicPreset.Node {
+          width = 180;
+          height = 100;
+        }
+        class Connection extends ClassicPreset.Connection {}
+
+        function createDynamicNode(nodeData) {
+          const node = new Node(nodeData.label);
+          // resize the node based on the max length of the input/output names
+          let maxSocketNameLength = 0;
+          nodeData.inputs.forEach((input) => {
+            let socket = new ClassicPreset.Socket(input.name);
+            if (!node.inputs.hasOwnProperty(input.name)) {
+              node.addInput(input.name, new ClassicPreset.Input(socket, input.name));
+              maxSocketNameLength = Math.max(maxSocketNameLength, input.name.length);
+            }
+          });
+
+          nodeData.outputs.forEach((output) => {
+            let socket = new ClassicPreset.Socket(output.name);
+            if (!node.outputs.hasOwnProperty(output.name)) {
+              node.addOutput(output.name, new ClassicPreset.Output(socket, output.name));
+              maxSocketNameLength = Math.max(maxSocketNameLength, output.name.length);
+            }
+          });
+          node.height = Math.max(140, node.height + (nodeData.inputs.length + nodeData.outputs.length) * 35)
+          node.width += maxSocketNameLength * 5;
+
+          return node;
+        }
+
+
+        async function addNode(editor, area, nodeData) {
+          console.log("Adding node", nodeData);
+          const node = createDynamicNode(nodeData);
+          await editor.addNode(node);
+          editor.nodeMap[nodeData.label] = node; // Assuming each nodeData has a unique ID
+          await area.translate(node.id, { x: nodeData.position[0], y: nodeData.position[1] });
+        }
+
+        async function addLink(editor, area, layout, linkData) {
+          const fromNode = editor.nodeMap[linkData.from_node];
+          const toNode = editor.nodeMap[linkData.to_node];
+          console.log("fromNode", fromNode, "toNode", toNode);
+          let socket;
+          if (fromNode && toNode) {
+            socket = new ClassicPreset.Socket(linkData.from_socket);
+            if (!fromNode.outputs.hasOwnProperty(linkData.from_socket)) {
+              fromNode.addOutput(linkData.from_socket, new ClassicPreset.Output(socket, linkData.from_socket));
+              fromNode.height += 25; // Increase height of node for each output
+              area.update('node', fromNode.id);
+            }
+            socket = new ClassicPreset.Socket(linkData.to_socket);
+            if (!toNode.inputs.hasOwnProperty(linkData.to_socket)) {
+              toNode.addInput(linkData.to_socket, new ClassicPreset.Input(socket, linkData.to_socket));
+              toNode.height += 25; // Increase height of node for each input
+              area.update('node', toNode.id);
+            }
+            await editor.addConnection(new Connection(fromNode, linkData.from_socket, toNode, linkData.to_socket));
+            // await layout(true);
+
+          }
+        }
+
+        async function loadJSON(editor, area, layout, workgraphData) {
+          for (const nodeId in workgraphData.nodes) {
+            const nodeData = workgraphData.nodes[nodeId];
+            await addNode(editor, area, nodeData);
+          }
+
+          // Adding connections based on workgraphData
+          workgraphData.links.forEach(async (link) => { // Specify the type of link here
+            await addLink(editor, area, layout, link);
+          });
+        }
+
+        async function createEditor(container) {
+            const socket = new ClassicPreset.Socket("socket");
+
+            const editor = new NodeEditor(Schemes);
+            const area = new AreaPlugin(container);
+            const connection = new ConnectionPlugin();
+            const render = new ReactPlugin({ createRoot });
+            const arrange = new AutoArrangePlugin();
+
+            const minimap = new MinimapPlugin({
+              boundViewport: true
+            });
+
+            AreaExtensions.selectableNodes(area, AreaExtensions.selector(), {
+                accumulating: AreaExtensions.accumulateOnCtrl(),
+            });
+
+            render.addPreset(Presets.classic.setup());
+            render.addPreset(Presets.minimap.setup({ size: 200 }));
+
+            connection.addPreset(ConnectionPresets.classic.setup());
+
+            const applier = new ArrangeAppliers.TransitionApplier({
+              duration: 500,
+              timingFunction: (t) => t,
+              async onTick() {
+                await AreaExtensions.zoomAt(area, editor.getNodes());
+              }
+            });
+
+            arrange.addPreset(ArrangePresets.classic.setup());
+
+
+            editor.use(area);
+            // area.use(connection);
+            area.use(render);
+            area.use(arrange);
+            area.use(minimap);
+
+
+            AreaExtensions.simpleNodesOrder(area);
+
+            async function layout(animate) {
+              await arrange.layout({ applier: animate ? applier : undefined });
+              AreaExtensions.zoomAt(area, editor.getNodes());
+            }
+
+            // Adding nodes based on workgraphData
+            const nodeMap = {}; // To keep track of created nodes for linking
+            editor.nodeMap = nodeMap;
+
+
+            return {
+              editor: editor,
+              area: area,
+              layout: layout,
+              destroy: () => area.destroy()
+            };
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+
+        function App() {
+            const [editor, setEditor] = useState(null);
+            const containerRef = useRef(null);
+
+            useEffect(() => {
+                if (containerRef.current && !editor) {
+                    createEditor(containerRef.current).then((editor) => {
+                        setEditor(editor);
+                        loadJSON(editor.editor, editor.area, editor.layout, workgraphData).then(() => {
+                          // aplly layout twice to ensure all nodes are arranged
+                          editor?.layout(false).then(() => editor?.layout(true));
+                        });
+                    });
+                }
+                if (document.getElementById('fullscreen-btn')) {
+                    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullScreen);
+                }
+                return () => {
+                    if (editor) {
+                        editor.destroy();
+                    }
+                };
+            }, [containerRef, editor]);
+
+            return (
+
+                <div className="App">
+                    <div>
+                      <button onClick={() => editor?.layout(true)}>Arrange</button>
+                      <button id="fullscreen-btn">Fullscreen</button>
+                    </div>
+                    <div ref={containerRef} className="rete" style={{ height: "100vh", width: "100%" }}></div>
+                </div>
+            );
+        }
+
+        const rootElement = document.getElementById("root");
+        const root = createRoot(rootElement);
+
+        root.render(
+                <App />
+        );
+    </script>
+</body>
+</html>
