@@ -1,4 +1,4 @@
-.. _espresso_modules:
+.. _qe_modules:
 
 ===========================================
 Modules

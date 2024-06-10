@@ -5,6 +5,7 @@ from aiida import orm
 from aiida_workgraph import WorkGraph
 from aiida_workgraph.decorator import node
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
+from aiida_quantumespresso.workflows.pw.relax import PwRelaxWorkChain
 from aiida_quantumespresso.calculations.dos import DosCalculation
 from aiida_quantumespresso.calculations.projwfc import ProjwfcCalculation
 
@@ -49,6 +50,7 @@ def pdos_workgraph(
     pseudos: dict = None,
     scf_parent_folder: orm.RemoteData = None,
     run_scf: bool = False,
+    run_relax: bool = False,
 ):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
@@ -58,10 +60,19 @@ def pdos_workgraph(
         pseudos = pseudo_family.get_pseudos(structure=structure)
     # create workgraph
     wg = WorkGraph("PDOS")
-    wg.context = {
-        "current_number_of_bands": None,
-        "scf_parent_folder": scf_parent_folder,
-    }
+    # ------- relax -----------
+    if run_relax:
+        relax_node = wg.nodes.new(PwRelaxWorkChain, name="relax", structure=structure)
+        relax_inputs = inputs.get("relax", {})
+        relax_inputs.update(
+            {
+                "base.pw.code": pw_code,
+                "base.pw.pseudos": pseudos,
+            }
+        )
+        relax_node.set(relax_inputs)
+        # override the structure
+        structure = relax_node.outputs["output_structure"]
     # -------- scf -----------
     if run_scf:
         scf_node = wg.nodes.new(PwBaseWorkChain, name="scf")
@@ -70,6 +81,7 @@ def pdos_workgraph(
             {"pw.structure": structure, "pw.code": pw_code, "pw.pseudos": pseudos}
         )
         scf_node.set(scf_inputs)
+        scf_parent_folder = scf_node.outputs["remote_folder"]
     # -------- nscf -----------
     nscf_node = wg.nodes.new(PwBaseWorkChain, name="nscf")
     nscf_inputs = inputs.get("nscf", {})
@@ -82,10 +94,6 @@ def pdos_workgraph(
         }
     )
     nscf_node.set(nscf_inputs)
-    if run_scf:
-        wg.links.new(
-            scf_node.outputs["remote_folder"], nscf_node.inputs["pw.parent_folder"]
-        )
     # -------- dos -----------
     dos1 = wg.nodes.new(DosCalculation, name="dos")
     dos_input = inputs.get("dos", {})

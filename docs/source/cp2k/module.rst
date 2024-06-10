@@ -1,4 +1,4 @@
-.. _espresso_modules:
+.. _cp2k_modules:
 
 ===========================================
 Modules

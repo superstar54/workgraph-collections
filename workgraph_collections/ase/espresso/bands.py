@@ -1,6 +1,7 @@
 from aiida_workgraph import WorkGraph, node
 from ase import Atoms
 from .base import pw_calculator
+from aiida import orm
 
 
 @node()
@@ -24,26 +25,45 @@ def bands_workgraph(
     nkpoints: int = None,
     density: int = None,
     kpoints_path: str = None,
+    scf_parent_folder: orm.RemoteData = None,
+    run_scf: bool = True,
+    run_relax: bool = False,
 ):
-    """Generate PdosWorkGraph."""
+    """Generate BandsStructure WorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
-    wg = WorkGraph("PDOS")
+    wg = WorkGraph("BandsStructure")
     wg.context = {
         "current_number_of_bands": None,
     }
+    # -------- relax -----------
+    if run_relax:
+        relax_node = wg.nodes.new(
+            pw_calculator,
+            name="relax",
+            atoms=atoms,
+            command=pw_command,
+            pseudopotentials=pseudopotentials,
+            pseudo_dir=pseudo_dir,
+            run_remotely=True,
+        )
+        relax_inputs = inputs.get("relax", {})
+        relax_node.set(relax_inputs)
+        atoms = relax_node.outputs["atoms"]
     # -------- scf -----------
-    scf_node = wg.nodes.new(
-        pw_calculator,
-        name="scf",
-        atoms=atoms,
-        command=pw_command,
-        pseudopotentials=pseudopotentials,
-        pseudo_dir=pseudo_dir,
-        run_remotely=True,
-    )
-    scf_inputs = inputs.get("scf", {})
-    scf_node.set(scf_inputs)
+    if run_scf:
+        scf_node = wg.nodes.new(
+            pw_calculator,
+            name="scf",
+            atoms=atoms,
+            command=pw_command,
+            pseudopotentials=pseudopotentials,
+            pseudo_dir=pseudo_dir,
+            run_remotely=True,
+        )
+        scf_inputs = inputs.get("scf", {})
+        scf_node.set(scf_inputs)
+        scf_parent_folder = scf_node.outputs["remote_folder"]
     # -------- kpoints path -----------
     find_kpoints_path_node = wg.nodes.new(
         find_kpoint_path,
@@ -65,7 +85,7 @@ def bands_workgraph(
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
         kpts=find_kpoints_path_node.outputs["result"],
-        parent_folder=scf_node.outputs["remote_folder"],
+        parent_folder=scf_parent_folder,
         parent_output_folder="out",
         parent_folder_name="out",
         run_remotely=True,
