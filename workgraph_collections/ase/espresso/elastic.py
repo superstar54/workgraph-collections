@@ -112,7 +112,7 @@ def elastic_workgraph(
 ):
     """Workgraph for elastic calculation.
     1. Get the deformed atoms.
-    2. Run the SCF calculation for each deformed atoms.
+    2. Run the relax calculation for each deformed atoms.
     3. Fit the elastic.
     """
     from .base import pw_calculator
