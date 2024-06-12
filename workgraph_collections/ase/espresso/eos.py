@@ -34,6 +34,7 @@ def eos_workgraph(
     kpts: list = None,
     input_data: dict = None,
     metadata: dict = None,
+    run_relax: bool = True,
 ):
     """Workgraph for EOS calculation.
     1. Get the scaled atoms.
@@ -46,35 +47,40 @@ def eos_workgraph(
     input_data = input_data or {}
 
     wg = WorkGraph("EOS")
-    scf_node = wg.nodes.new(
-        pw_calculator,
-        name="relax",
-        atoms=atoms,
-        run_remotely=True,
-        metadata=metadata,
-        computer=computer,
-    )
-    relax_input_data = deepcopy(input_data)
-    relax_input_data.setdefault("CONTROL", {})
-    relax_input_data["CONTROL"]["calculation"] = "vc-relax"
-    scf_node.set(
-        {
-            "command": command,
-            "input_data": relax_input_data,
-            "kpts": kpts,
-            "pseudopotentials": pseudopotentials,
-            "pseudo_dir": pseudo_dir,
-        }
-    )
+    # -------- relax -----------
+    if run_relax:
+        relax_node = wg.nodes.new(
+            pw_calculator,
+            name="relax",
+            atoms=atoms,
+            run_remotely=True,
+            metadata=metadata,
+            computer=computer,
+        )
+        relax_input_data = deepcopy(input_data)
+        relax_input_data.setdefault("CONTROL", {})
+        relax_input_data["CONTROL"]["calculation"] = "vc-relax"
+        relax_node.set(
+            {
+                "command": command,
+                "input_data": relax_input_data,
+                "kpts": kpts,
+                "pseudopotentials": pseudopotentials,
+                "pseudo_dir": pseudo_dir,
+            }
+        )
+        atoms = relax_node.outputs["atoms"]
+    # -------- scale_atoms -----------
     scale_atoms_node = wg.nodes.new(
         generate_scaled_atoms,
         name="scale_atoms",
-        atoms=scf_node.outputs["atoms"],
+        atoms=atoms,
         scales=scales,
         computer=computer,
         metadata=metadata,
         run_remotely=True,
     )
+    # -------- all_scf -----------
     all_scf1 = wg.nodes.new(
         all_scf,
         name="all_scf",
@@ -89,6 +95,7 @@ def eos_workgraph(
             "computer": computer,
         },
     )
+    # -------- fit_eos -----------
     wg.nodes.new(
         fit_eos,
         name="fit_eos",

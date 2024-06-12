@@ -24,6 +24,11 @@ List of all Methods
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: workgraph_collections.ase.espresso.elastic
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: workgraph_collections.ase.espresso.bands
     :members:
     :undoc-members:

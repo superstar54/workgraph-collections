@@ -10,6 +10,7 @@ Here are the collection of WorkGraphs for Quantum ESPRESSO
    base
    atomization_energy
    eos
+   elastic
    bands
    pdos
    bader
