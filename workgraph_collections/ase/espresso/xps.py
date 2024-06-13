@@ -4,7 +4,9 @@ from workgraph_collections.ase.common.xps import (
     get_non_equivalent_site,
     binding_energy,
 )
+from workgraph_collections.ase.espresso.base import pw_calculator
 from ase import Atoms
+from copy import deepcopy
 
 
 @node.graph_builder(outputs=[["context.scf", "results"]])
@@ -114,6 +116,7 @@ def xps_workgraph(
     scf_inputs: str = None,
     corrections: dict = None,
     metadata: dict = None,
+    run_relax: bool = False,
 ):
     """Workgraph for XPS calculation.
     1. Get the marked atoms.
@@ -121,9 +124,26 @@ def xps_workgraph(
     with core hole pseudopotentials.
     3. Calculate the binding energy.
     """
+    from ase.io.espresso import Namelist
+
     scf_inputs = scf_inputs or {}
 
     wg = WorkGraph("XPS")
+    # -------- relax -----------
+    if run_relax:
+        relax_node = wg.nodes.new(
+            pw_calculator,
+            name="relax",
+            atoms=atoms,
+            run_remotely=True,
+        )
+        relax_inputs = deepcopy(scf_inputs)
+        input_data = Namelist(relax_inputs.get("input_data", {})).to_nested(binary="pw")
+        input_data["CONTROL"]["calculation"] = "relax"
+        relax_inputs["input_data"] = input_data
+        relax_node.set(relax_inputs)
+        atoms = relax_node.outputs["atoms"]
+    # -------- marked_atoms -----------
     if atoms_list:
         marked_atoms_node = wg.nodes.new(
             get_marked_atoms,
@@ -138,7 +158,7 @@ def xps_workgraph(
             get_non_equivalent_site,
             name="marked_atoms",
             atoms=atoms,
-            atoms_list=atoms_list,
+            element_list=element_list,
             run_remotely=True,
             metadata=metadata,
         )

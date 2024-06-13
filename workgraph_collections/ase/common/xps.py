@@ -6,7 +6,7 @@ from ase import Atoms
 def get_non_equivalent_site(
     atoms: Atoms = None,
     min_cell_length: float = 4.0,
-    elements_list: list = None,
+    element_list: list = None,
     marker: str = "X",
     is_molecule: bool = True,
 ):
@@ -15,7 +15,7 @@ def get_non_equivalent_site(
     from ase.build import make_supercell
     import numpy as np
 
-    if elements_list is None:
+    if element_list is None:
         raise "Elements shoud not be None."
     if is_molecule:
         structure = AseAtomsAdaptor().get_molecule(atoms)
@@ -34,15 +34,15 @@ def get_non_equivalent_site(
 
         pga = PointGroupAnalyzer(structure)
         eq_sets = pga.get_equivalent_atoms()["eq_sets"]
-        structures = {"ground": {"atoms": atoms.copy()}}
+        structures = {"supercell": {"atoms": atoms.copy()}}
         for index, data in eq_sets.items():
-            if atoms[index].symbol in elements_list:
+            if atoms[index].symbol in element_list:
                 label = f"{atoms[index].symbol}_{index}"
                 marked_atoms = atoms.copy()
                 marked_atoms[index].symbol = marker
                 structures[label] = {
                     "symbol": atoms[index].symbol,
-                    "indices": data,
+                    "indices": list(data),
                     "atoms": marked_atoms,
                 }
     else:
@@ -56,17 +56,18 @@ def get_non_equivalent_site(
         structure = AseAtomsAdaptor().get_structure(atoms)
         sga = SpacegroupAnalyzer(structure)
         distinct_sites = sga.get_symmetrized_structure()
-        structures = {}
+        structures = {"supercell": {"atoms": atoms.copy()}}
         for i in range(len(distinct_sites.equivalent_sites)):
             site = distinct_sites.equivalent_sites[i][0]
-            index = distinct_sites.equivalent_indices[i][0]
+            indices = list(distinct_sites.equivalent_indices[i])
+            index = indices[0]
             label = f"{site.species_string}_{index}"
             marked_atoms = supercell.copy()
             marked_atoms[index].symbol = marker
             structures[label] = {
                 "symbol": site.species_string,
                 "atoms": marked_atoms,
-                "indices": distinct_sites.equivalent_indices[i],
+                "indices": indices,
             }
 
     return structures

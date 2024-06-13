@@ -11,6 +11,7 @@ def pw_calculator(
     command: str = "pw.x",
     input_data: dict = None,
     pseudo_dir: str = "./pseudopotentials",
+    calculation: str = None,
 ) -> dict:
     """Run a Quantum Espresso calculation on the given atoms object."""
     from ase.io.espresso import Namelist
@@ -22,6 +23,10 @@ def pw_calculator(
 
     input_data = Namelist(input_data)
     input_data.to_nested(binary="pw")
+    # set the calculation type
+    if calculation:
+        input_data.setdefault("CONTROL", {})
+        input_data["CONTROL"]["calculation"] = calculation
 
     # Set the output directory
     input_data.setdefault("CONTROL", {})
@@ -48,7 +53,7 @@ def pw_calculator(
     return {"atoms": atoms, "results": results}
 
 
-@node()
+@node(outputs=[["General", "results"]])
 def dos_calculator(
     command: str = "dos.x",
     input_data: dict = None,
@@ -64,11 +69,11 @@ def dos_calculator(
 
     calc = Espresso(profile=profile, template=DosTemplate(), input_data=input_data)
 
-    dos = calc.get_property("dos", Atoms())
-    return dos
+    results = calc.get_property("dos", Atoms())
+    return {"results": results}
 
 
-@node()
+@node(outputs=[["General", "results"]])
 def projwfc_calculator(
     command: str = "projwfc.x",
     input_data: dict = None,
@@ -85,11 +90,11 @@ def projwfc_calculator(
 
     calc = Espresso(profile=profile, template=ProjwfcTemplate(), input_data=input_data)
 
-    pdos = calc.get_property("pdos", Atoms())
-    return pdos
+    results = calc.get_property("pdos", Atoms())
+    return {"results": results}
 
 
-@node()
+@node(outputs=[["General", "results"]])
 def pp_calculator(
     command: str = "pp.x",
     input_data: dict = None,
@@ -106,5 +111,34 @@ def pp_calculator(
 
     calc = Espresso(profile=profile, template=PpTemplate(), input_data=input_data)
 
-    pp = calc.get_property("pp", Atoms())
-    return pp
+    results = calc.get_property("pp", Atoms())
+    return {"results": results}
+
+
+@node(outputs=[["General", "results"]])
+def xspectra_calculator(
+    command: str = "xspectra.x",
+    input_data: dict = None,
+    kpts: list = None,
+    koffset: list = None,
+) -> dict:
+    """Run a xspectra calculation."""
+
+    from ase_quantumespresso.xspectra import XspectraTemplate
+    from ase_quantumespresso.espresso import Espresso, EspressoProfile
+    from ase import Atoms
+
+    # Optionally create profile to override paths in ASE configuration:
+    profile = EspressoProfile(command=command, pseudo_dir=".")
+    input_data["outdir"] = "out"
+
+    calc = Espresso(
+        profile=profile,
+        template=XspectraTemplate(),
+        input_data=input_data,
+        kpts=kpts,
+        koffset=koffset,
+    )
+
+    results = calc.get_property("xspectra", Atoms())
+    return {"results": results}
