@@ -117,7 +117,6 @@ def elastic_workgraph(
     """
     from .base import pw_calculator
     from copy import deepcopy
-    from ase.io.espresso import Namelist
 
     input_data = input_data or {}
 
@@ -128,15 +127,12 @@ def elastic_workgraph(
             pw_calculator,
             name="relax",
             atoms=atoms,
+            calculation="vc-relax",
             run_remotely=True,
             metadata=metadata,
             computer=computer,
         )
         relax_input_data = deepcopy(input_data)
-        relax_input_data = Namelist(relax_input_data)
-        relax_input_data.to_nested(binary="pw")
-        relax_input_data.setdefault("CONTROL", {})
-        relax_input_data["CONTROL"]["calculation"] = "vc-relax"
         relax_node.set(
             {
                 "command": command,

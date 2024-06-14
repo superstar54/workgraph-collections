@@ -46,6 +46,7 @@ pip install git+https://github.com/superstar54/workgraph-collections.git
   - [Projected density of states (PDOS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/pdos.html)
   - [Bader Charge](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/bader.html)
   - [X-ray photoelectron spectroscopy (XPS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/xps.html)
+  - [X-ray Absorption Near Edge Structure (XANES)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/xas.html) (Ongoing)
 
 
 ## GPAW
