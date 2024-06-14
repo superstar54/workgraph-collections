@@ -1,8 +1,8 @@
-from aiida_workgraph import node
+from aiida_workgraph import task
 from ase import Atoms
 
 
-@node(outputs=[["General", "atoms"], ["General", "results"]])
+@task(outputs=[["General", "atoms"], ["General", "results"]])
 def pw_calculator(
     atoms: Atoms,
     pseudopotentials: dict,
@@ -53,7 +53,7 @@ def pw_calculator(
     return {"atoms": atoms, "results": results}
 
 
-@node(outputs=[["General", "results"]])
+@task(outputs=[["General", "results"]])
 def dos_calculator(
     command: str = "dos.x",
     input_data: dict = None,
@@ -73,7 +73,7 @@ def dos_calculator(
     return {"results": results}
 
 
-@node(outputs=[["General", "results"]])
+@task(outputs=[["General", "results"]])
 def projwfc_calculator(
     command: str = "projwfc.x",
     input_data: dict = None,
@@ -94,7 +94,7 @@ def projwfc_calculator(
     return {"results": results}
 
 
-@node(outputs=[["General", "results"]])
+@task(outputs=[["General", "results"]])
 def pp_calculator(
     command: str = "pp.x",
     input_data: dict = None,
@@ -115,7 +115,7 @@ def pp_calculator(
     return {"results": results}
 
 
-@node(outputs=[["General", "results"]])
+@task(outputs=[["General", "results"]])
 def xspectra_calculator(
     command: str = "xspectra.x",
     input_data: dict = None,

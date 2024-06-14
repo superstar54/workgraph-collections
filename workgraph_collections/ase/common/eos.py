@@ -1,8 +1,8 @@
-from aiida_workgraph import node
+from aiida_workgraph import task
 from ase import Atoms
 
 
-@node(outputs=[["General", "scaled_atoms"], ["General", "volumes"]])
+@task(outputs=[["General", "scaled_atoms"], ["General", "volumes"]])
 def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
     """Scale the structure by the given scales."""
     volumes = {}
@@ -15,7 +15,7 @@ def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
     return {"scaled_atoms": scaled_atoms, "volumes": volumes}
 
 
-@node()
+@task()
 def fit_eos(volumes: dict, scf_results: dict) -> dict:
     """Fit the EOS of the data."""
     from ase.eos import EquationOfState

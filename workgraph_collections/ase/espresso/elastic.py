@@ -1,9 +1,9 @@
-from aiida_workgraph import WorkGraph, node
+from aiida_workgraph import WorkGraph, task
 from pymatgen.analysis.elasticity.strain import DeformedStructureSet
 from ase import Atoms
 
 
-@node()
+@task()
 def get_deformed_structure_set(
     atoms: Atoms, norm_strains: list, shear_strains: list, symmetry: bool = True
 ) -> DeformedStructureSet:
@@ -22,7 +22,7 @@ def get_deformed_structure_set(
     return deformed_structure_set
 
 
-@node.graph_builder(outputs=[["context.results", "relax_results"]])
+@task.graph_builder(outputs=[["context.results", "relax_results"]])
 def run_relaxation(
     deformed_structure_set: DeformedStructureSet, relax_inputs: dict
 ) -> WorkGraph:
@@ -38,7 +38,7 @@ def run_relaxation(
     # becareful, we generate new data here, thus break the data provenance!
     # that's why I put the deformed_structure in the context, so that we can link them
     for i in range(len(deformed_atoms)):
-        relax = wg.nodes.new(
+        relax = wg.tasks.new(
             pw_calculator, name=f"relax_{i}", atoms=deformed_atoms[i], run_remotely=True
         )
         relax.set(relax_inputs)
@@ -47,7 +47,7 @@ def run_relaxation(
     return wg
 
 
-@node()
+@task()
 def fit_elastic_constants(
     atoms: Atoms,
     deformed_structure_set: DeformedStructureSet,
@@ -95,7 +95,7 @@ def fit_elastic_constants(
     return elastic_constants
 
 
-@node.graph_builder(outputs=[["fit_elastic.result", "result"]])
+@task.graph_builder(outputs=[["fit_elastic.result", "result"]])
 def elastic_workgraph(
     atoms: Atoms = None,
     command: str = "pw.x",
@@ -123,7 +123,7 @@ def elastic_workgraph(
     wg = WorkGraph("Elastic")
     # -------- relax -----------
     if run_relax:
-        relax_node = wg.nodes.new(
+        relax_task = wg.tasks.new(
             pw_calculator,
             name="relax",
             atoms=atoms,
@@ -133,7 +133,7 @@ def elastic_workgraph(
             computer=computer,
         )
         relax_input_data = deepcopy(input_data)
-        relax_node.set(
+        relax_task.set(
             {
                 "command": command,
                 "input_data": relax_input_data,
@@ -142,9 +142,9 @@ def elastic_workgraph(
                 "pseudo_dir": pseudo_dir,
             }
         )
-        atoms = relax_node.outputs["atoms"]
+        atoms = relax_task.outputs["atoms"]
     # -------- deformed_structure -----------
-    deformed_structure_node = wg.nodes.new(
+    deformed_structure_task = wg.tasks.new(
         get_deformed_structure_set,
         name="deformed_structure",
         atoms=atoms,
@@ -156,10 +156,10 @@ def elastic_workgraph(
         run_remotely=True,
     )
     # -------- run_relaxation -----------
-    run_relaxation_node = wg.nodes.new(
+    run_relaxation_task = wg.tasks.new(
         run_relaxation,
         name="run_relaxation",
-        deformed_structure_set=deformed_structure_node.outputs["result"],
+        deformed_structure_set=deformed_structure_task.outputs["result"],
         relax_inputs={
             "command": command,
             "input_data": input_data,
@@ -171,12 +171,12 @@ def elastic_workgraph(
         },
     )
     # -------- fit_elastic -----------
-    wg.nodes.new(
+    wg.tasks.new(
         fit_elastic_constants,
         name="fit_elastic",
         atoms=atoms,
-        deformed_structure_set=deformed_structure_node.outputs["result"],
-        relax_results=run_relaxation_node.outputs["relax_results"],
+        deformed_structure_set=deformed_structure_task.outputs["result"],
+        relax_results=run_relaxation_task.outputs["relax_results"],
         symmetry=symmetry,
         computer=computer,
         metadata=metadata,

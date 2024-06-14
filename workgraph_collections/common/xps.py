@@ -1,8 +1,8 @@
 from aiida.orm import Dict
-from aiida_workgraph import node
+from aiida_workgraph import task
 
 
-@node.calcfunction()
+@task.calcfunction()
 def binding_energy(
     corrections: dict = None,
     energy_units: str = "eV",

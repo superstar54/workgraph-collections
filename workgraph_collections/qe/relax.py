@@ -3,17 +3,17 @@
 
 from aiida import orm
 from aiida_workgraph import WorkGraph
-from aiida_workgraph.decorator import node
+from aiida_workgraph import task
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 
 
-@node()
+@task()
 def should_run_relax(is_converged=False, iteration=0, max_iterations=5):
     """Check if relax should be run."""
     return not is_converged and iteration < max_iterations
 
 
-@node.calcfunction()
+@task.calcfunction()
 def prepare_relax_inputs(parameters, current_number_of_bands=None):
     """Generate scf parameters from relax calculation."""
     parameters = parameters.get_dict()
@@ -23,7 +23,7 @@ def prepare_relax_inputs(parameters, current_number_of_bands=None):
     return orm.Dict(parameters)
 
 
-@node()
+@task()
 def inspect_relax(outputs=None, prev_cell_volume=None, volume_threshold=0.1):
     """Inspect relax calculation."""
     structure = outputs.output_structure
@@ -42,7 +42,7 @@ def inspect_relax(outputs=None, prev_cell_volume=None, volume_threshold=0.1):
     }
 
 
-@node.calcfunction()
+@task.calcfunction()
 def prepare_scf_inputs(parameters, current_number_of_bands=None):
     """Generate scf parameters from relax calculation."""
     parameters = parameters.get_dict()
@@ -52,7 +52,7 @@ def prepare_scf_inputs(parameters, current_number_of_bands=None):
     return orm.Dict(parameters)
 
 
-@node.group(
+@task.group(
     outputs=[
         ["relax.output_structure", "output_structure"],
         ["inspect_relax.current_number_of_bands", "current_number_of_bands"],
@@ -84,29 +84,29 @@ def relax_workgraph(
         max_iterations=max_iterations,
     )
     # -------- prepare relax input -----------
-    prepare_relax_inputs_node = tree.nodes.new(
+    prepare_relax_inputs_task = tree.nodes.new(
         prepare_relax_inputs,
         name="prepare_relax_inputs",
         parameters=inputs["pw"].get("parameters", {}),
         current_number_of_bands="{{current_number_of_bands}}",
     )
     # -------- relax -----------
-    relax_node = tree.nodes.new(PwBaseWorkChain, name="relax")
+    relax_task = tree.nodes.new(PwBaseWorkChain, name="relax")
     inputs["pw.structure"] = "{{current_structure}}"
-    relax_node.set(inputs)
-    relax_node.to_context = [["output_structure", "current_structure"]]
+    relax_task.set(inputs)
+    relax_task.to_context = [["output_structure", "current_structure"]]
     tree.links.new(
-        prepare_relax_inputs_node.outputs[0], relax_node.inputs["pw.parameters"]
+        prepare_relax_inputs_task.outputs[0], relax_task.inputs["pw.parameters"]
     )
     # -------- inspect relax -----------
-    inspect_relax_node = tree.nodes.new(
+    inspect_relax_task = tree.nodes.new(
         inspect_relax,
         name="inspect_relax",
         prev_cell_volume="{{prev_cell_volume}}",
         volume_threshold=volume_threshold,
     )
-    tree.links.new(relax_node.outputs["_outputs"], inspect_relax_node.inputs["outputs"])
-    inspect_relax_node.to_context = [
+    tree.links.new(relax_task.outputs["_outputs"], inspect_relax_task.inputs["outputs"])
+    inspect_relax_task.to_context = [
         ["current_number_of_bands", "current_number_of_bands"],
         ["prev_cell_volume", "prev_cell_volume"],
         ["is_converged", "is_converged"],
@@ -115,7 +115,7 @@ def relax_workgraph(
     return tree
 
 
-@node.graph_builder()
+@task.graph_builder()
 def relax_scf_workgraph(
     structure=None, inputs=None, max_iterations=5, volume_threshold=0.1
 ):
@@ -125,7 +125,7 @@ def relax_scf_workgraph(
     tree = WorkGraph()
     # -------- relax -----------
     relax_inputs = inputs.get("relax", {})
-    relax_node = tree.nodes.new(
+    relax_task = tree.nodes.new(
         relax_workgraph,
         name="relax",
         structure=structure,
@@ -135,20 +135,20 @@ def relax_scf_workgraph(
     )
     # -------- prepare scf inputs -----------
     scf_inputs = inputs.get("scf", {})
-    prepare_scf_inputs_node = tree.nodes.new(
+    prepare_scf_inputs_task = tree.nodes.new(
         prepare_scf_inputs,
         name="prepare_scf_inputs",
         parameters=scf_inputs["pw"].get("parameters", {}),
     )
     tree.links.new(
-        relax_node.outputs["current_number_of_bands"],
+        relax_task.outputs["current_number_of_bands"],
         prepare_scf_inputs_node.inputs["current_number_of_bands"],
     )
     # -------- scf -----------
-    scf_node = tree.nodes.new(PwBaseWorkChain, name="scf")
-    scf_node.set(scf_inputs)
-    tree.links.new(prepare_scf_inputs_node.outputs[0], scf_node.inputs["pw.parameters"])
+    scf_task = tree.nodes.new(PwBaseWorkChain, name="scf")
+    scf_task.set(scf_inputs)
+    tree.links.new(prepare_scf_inputs_task.outputs[0], scf_task.inputs["pw.parameters"])
     tree.links.new(
-        relax_node.outputs["output_structure"], scf_node.inputs["pw.structure"]
+        relax_task.outputs["output_structure"], scf_task.inputs["pw.structure"]
     )
     return tree

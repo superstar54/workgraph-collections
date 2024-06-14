@@ -1,8 +1,8 @@
-from aiida_workgraph import node
+from aiida_workgraph import task
 from ase import Atoms
 
 
-@node()
+@task()
 def get_non_equivalent_site(
     atoms: Atoms = None,
     min_cell_length: float = 4.0,
@@ -73,7 +73,7 @@ def get_non_equivalent_site(
     return structures
 
 
-@node()
+@task()
 def get_marked_atoms(atoms: Atoms = None, atoms_list: list = None, marker: str = "X"):
     """Get the marked atoms for each atom."""
     structures = {"ground": {"atoms": atoms.copy()}}
@@ -91,7 +91,7 @@ def get_marked_atoms(atoms: Atoms = None, atoms_list: list = None, marker: str =
     return structures
 
 
-@node()
+@task()
 def binding_energy(corrections: dict = None, **scf_outputs: dict):
     output_ground = scf_outputs.pop("ground")
     results = {}

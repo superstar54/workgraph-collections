@@ -1,9 +1,9 @@
-from aiida_workgraph import node
+from aiida_workgraph import task
 from aiida import orm
 
 
 # explicitly define the output socket name to match the return value of the function
-@node.calcfunction(outputs=[["General", "structures"], ["General", "volumes"]])
+@task.calcfunction(outputs=[["General", "structures"], ["General", "volumes"]])
 def scale_structure(structure: orm.StructureData, scales: list):
     """Scale the structure by the given scales."""
     atoms = structure.get_ase()
@@ -18,7 +18,7 @@ def scale_structure(structure: orm.StructureData, scales: list):
     return {"structures": structures, "volumes": orm.Dict(volumes)}
 
 
-@node.calcfunction()
+@task.calcfunction()
 # because this is a calcfunction, and the input scf_outputs are dynamic, we need use **scf_outputs.
 def fit_eos(volumes: dict = None, **scf_outputs):
     """Fit the EOS of the data."""

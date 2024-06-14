@@ -1,10 +1,10 @@
-from aiida_workgraph import WorkGraph, node
+from aiida_workgraph import WorkGraph, task
 from ase import Atoms
 from .base import pw_calculator
 from aiida import orm
 
 
-@node()
+@task()
 def find_kpoint_path(
     atoms: Atoms, path: str = None, npoints: int = None, density: int = None
 ):
@@ -15,7 +15,7 @@ def find_kpoint_path(
     return kpts
 
 
-@node.graph_builder()
+@task.graph_builder()
 def bands_workgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",
@@ -38,7 +38,7 @@ def bands_workgraph(
     }
     # -------- relax -----------
     if run_relax:
-        relax_node = wg.nodes.new(
+        relax_task = wg.tasks.new(
             pw_calculator,
             name="relax",
             atoms=atoms,
@@ -48,11 +48,11 @@ def bands_workgraph(
             run_remotely=True,
         )
         relax_inputs = inputs.get("relax", {})
-        relax_node.set(relax_inputs)
-        atoms = relax_node.outputs["atoms"]
+        relax_task.set(relax_inputs)
+        atoms = relax_task.outputs["atoms"]
     # -------- scf -----------
     if run_scf:
-        scf_node = wg.nodes.new(
+        scf_task = wg.tasks.new(
             pw_calculator,
             name="scf",
             atoms=atoms,
@@ -62,10 +62,10 @@ def bands_workgraph(
             run_remotely=True,
         )
         scf_inputs = inputs.get("scf", {})
-        scf_node.set(scf_inputs)
-        scf_parent_folder = scf_node.outputs["remote_folder"]
+        scf_task.set(scf_inputs)
+        scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- kpoints path -----------
-    find_kpoints_path_node = wg.nodes.new(
+    find_kpoints_path_task = wg.tasks.new(
         find_kpoint_path,
         name="find_kponits_path",
         atoms=atoms,
@@ -75,21 +75,21 @@ def bands_workgraph(
         run_remotely=True,
     )
     find_kpoints_path_inputs = inputs.get("find_kpoints_path", {})
-    find_kpoints_path_node.set(find_kpoints_path_inputs)
+    find_kpoints_path_task.set(find_kpoints_path_inputs)
     # -------- bands -----------
-    bands_node = wg.nodes.new(
+    bands_task = wg.tasks.new(
         pw_calculator,
         name="bands",
         atoms=atoms,
         command=pw_command,
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
-        kpts=find_kpoints_path_node.outputs["result"],
+        kpts=find_kpoints_path_task.outputs["result"],
         parent_folder=scf_parent_folder,
         parent_output_folder="out",
         parent_folder_name="out",
         run_remotely=True,
     )
     bands_inputs = inputs.get("bands", {})
-    bands_node.set(bands_inputs)
+    bands_task.set(bands_inputs)
     return wg
