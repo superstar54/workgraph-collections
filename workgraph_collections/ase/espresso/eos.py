@@ -71,7 +71,7 @@ def eos_workgraph(
         )
         atoms = relax_task.outputs["atoms"]
     # -------- scale_atoms -----------
-    scale_atoms_node = wg.tasks.new(
+    scale_atoms_task = wg.tasks.new(
         generate_scaled_atoms,
         name="scale_atoms",
         atoms=atoms,
@@ -84,7 +84,7 @@ def eos_workgraph(
     all_scf1 = wg.tasks.new(
         all_scf,
         name="all_scf",
-        scaled_atoms=scale_atoms_node.outputs["scaled_atoms"],
+        scaled_atoms=scale_atoms_task.outputs["scaled_atoms"],
         scf_inputs={
             "command": command,
             "input_data": input_data,
@@ -99,7 +99,7 @@ def eos_workgraph(
     wg.tasks.new(
         fit_eos,
         name="fit_eos",
-        volumes=scale_atoms_node.outputs["volumes"],
+        volumes=scale_atoms_task.outputs["volumes"],
         scf_results=all_scf1.outputs["scf_results"],
         computer=computer,
         metadata=metadata,

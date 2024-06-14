@@ -65,7 +65,7 @@ def bands_workgraph(
         scf_task.set(scf_inputs)
         scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- kpoints path -----------
-    find_kpoints_path_node = wg.tasks.new(
+    find_kpoints_path_task = wg.tasks.new(
         find_kpoint_path,
         name="find_kponits_path",
         atoms=atoms,
@@ -75,21 +75,21 @@ def bands_workgraph(
         run_remotely=True,
     )
     find_kpoints_path_inputs = inputs.get("find_kpoints_path", {})
-    find_kpoints_path_node.set(find_kpoints_path_inputs)
+    find_kpoints_path_task.set(find_kpoints_path_inputs)
     # -------- bands -----------
-    bands_node = wg.tasks.new(
+    bands_task = wg.tasks.new(
         pw_calculator,
         name="bands",
         atoms=atoms,
         command=pw_command,
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
-        kpts=find_kpoints_path_node.outputs["result"],
+        kpts=find_kpoints_path_task.outputs["result"],
         parent_folder=scf_parent_folder,
         parent_output_folder="out",
         parent_folder_name="out",
         run_remotely=True,
     )
     bands_inputs = inputs.get("bands", {})
-    bands_node.set(bands_inputs)
+    bands_task.set(bands_inputs)
     return wg

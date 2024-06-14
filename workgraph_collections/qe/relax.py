@@ -84,7 +84,7 @@ def relax_workgraph(
         max_iterations=max_iterations,
     )
     # -------- prepare relax input -----------
-    prepare_relax_inputs_node = tree.nodes.new(
+    prepare_relax_inputs_task = tree.nodes.new(
         prepare_relax_inputs,
         name="prepare_relax_inputs",
         parameters=inputs["pw"].get("parameters", {}),
@@ -96,7 +96,7 @@ def relax_workgraph(
     relax_task.set(inputs)
     relax_task.to_context = [["output_structure", "current_structure"]]
     tree.links.new(
-        prepare_relax_inputs_node.outputs[0], relax_task.inputs["pw.parameters"]
+        prepare_relax_inputs_task.outputs[0], relax_task.inputs["pw.parameters"]
     )
     # -------- inspect relax -----------
     inspect_relax_task = tree.nodes.new(
@@ -135,7 +135,7 @@ def relax_scf_workgraph(
     )
     # -------- prepare scf inputs -----------
     scf_inputs = inputs.get("scf", {})
-    prepare_scf_inputs_node = tree.nodes.new(
+    prepare_scf_inputs_task = tree.nodes.new(
         prepare_scf_inputs,
         name="prepare_scf_inputs",
         parameters=scf_inputs["pw"].get("parameters", {}),
@@ -147,7 +147,7 @@ def relax_scf_workgraph(
     # -------- scf -----------
     scf_task = tree.nodes.new(PwBaseWorkChain, name="scf")
     scf_task.set(scf_inputs)
-    tree.links.new(prepare_scf_inputs_node.outputs[0], scf_task.inputs["pw.parameters"])
+    tree.links.new(prepare_scf_inputs_task.outputs[0], scf_task.inputs["pw.parameters"])
     tree.links.new(
         relax_task.outputs["output_structure"], scf_task.inputs["pw.structure"]
     )

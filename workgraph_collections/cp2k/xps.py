@@ -1,4 +1,4 @@
-from aiida_workgraph import WorkGraph, task, build_node
+from aiida_workgraph import WorkGraph, task, build_task
 from aiida.orm import List, Dict, StructureData, Code, Bool
 from workgraph_collections.common.xps import binding_energy
 from aiida_quantumespresso.workflows.functions.get_xspectra_structures import (
@@ -9,11 +9,11 @@ from aiida_quantumespresso.workflows.functions.get_marked_structures import (
 )
 
 # add a output socket manually
-GetXspectraStructureNode = build_node(
+GetXspectraStructureTask = build_task(
     get_xspectra_structures,
     outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
 )
-GetMarkedStructuresNode = build_node(
+GetMarkedStructuresTask = build_task(
     get_marked_structures,
     outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
 )
@@ -106,15 +106,15 @@ def xps_workgraph(
 
     wg = WorkGraph("XPS")
     if atoms_list:
-        structures_node = wg.tasks.new(
-            GetMarkedStructuresNode,
+        structures_task = wg.tasks.new(
+            GetMarkedStructuresTask,
             name="marked_structures",
             structure=structure,
             atoms_list=atoms_list,
         )
     else:
-        structures_node = wg.tasks.new(
-            GetXspectraStructureNode,
+        structures_task = wg.tasks.new(
+            GetXspectraStructureTask,
             name="marked_structures",
             structure=structure,
             kwargs={
@@ -133,12 +133,12 @@ def xps_workgraph(
         core_hole_treatment=core_hole_treatment,
         metadata=metadata,
         is_molecule=is_molecule,
-        marked_structures=structures_node.outputs["_outputs"],
+        marked_structures=structures_task.outputs["_outputs"],
     )
     wg.tasks.new(
         binding_energy,
         name="binding_energy",
-        sites_info=structures_node.outputs["output_parameters"],
+        sites_info=structures_task.outputs["output_parameters"],
         scf_outputs=scf_task.outputs["result"],
         corrections=correction_energies,
         energy_units="a.u",

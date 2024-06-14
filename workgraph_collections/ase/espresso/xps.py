@@ -145,7 +145,7 @@ def xps_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- marked_atoms -----------
     if atoms_list:
-        marked_atoms_node = wg.tasks.new(
+        marked_atoms_task = wg.tasks.new(
             get_marked_atoms,
             name="marked_atoms",
             atoms=atoms,
@@ -154,7 +154,7 @@ def xps_workgraph(
             metadata=metadata,
         )
     elif element_list:
-        marked_atoms_node = wg.tasks.new(
+        marked_atoms_task = wg.tasks.new(
             get_non_equivalent_site,
             name="marked_atoms",
             atoms=atoms,
@@ -167,7 +167,7 @@ def xps_workgraph(
     run_scf_task = wg.tasks.new(
         run_scf,
         name="run_scf",
-        marked_atoms=marked_atoms_node.outputs["result"],
+        marked_atoms=marked_atoms_task.outputs["result"],
     )
     run_scf_task.set(scf_inputs)
     wg.tasks.new(

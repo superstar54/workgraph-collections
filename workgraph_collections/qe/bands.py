@@ -1,16 +1,16 @@
 """BandsWorkGraph."""
 
 from aiida import orm
-from aiida_workgraph import WorkGraph, task, build_node
+from aiida_workgraph import WorkGraph, task, build_task
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 from aiida_quantumespresso.workflows.pw.relax import PwRelaxWorkChain
 from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis import (
     seekpath_structure_analysis,
 )
 
-# we build a SeekpathNode Node
+# we build a SeekpathTask Node
 # Add only two outputs port here, because we only use these outputs in the following.
-SeekpathNode = build_node(
+SeekpathTask = build_task(
     seekpath_structure_analysis,
     outputs=[["General", "primitive_structure"], ["General", "explicit_kpoints"]],
 )
@@ -93,15 +93,15 @@ def bands_workgraph(
         current_number_of_bands = inspect_relax_task.outputs["result"]
     # -------- seekpath -----------
     if bands_kpoints_distance is not None:
-        seekpath_node = wg.tasks.new(
-            SeekpathNode,
+        seekpath_task = wg.tasks.new(
+            SeekpathTask,
             name="seekpath",
             structure=structure,
             kwargs={"reference_distance": orm.Float(bands_kpoints_distance)},
         )
-        structure = seekpath_node.outputs["primitive_structure"]
+        structure = seekpath_task.outputs["primitive_structure"]
         # override the bands_kpoints
-        bands_kpoints = seekpath_node.outputs["explicit_kpoints"]
+        bands_kpoints = seekpath_task.outputs["explicit_kpoints"]
     # -------- scf -----------
     # retrieve the scf inputs from the inputs, and update the scf parameters
     scf_inputs = inputs.get("scf", {"pw": {}})
@@ -131,7 +131,7 @@ def bands_workgraph(
         nbands_factor=nbands_factor,
         scf_parameters=scf_task.outputs["output_parameters"],
     )
-    bands_node = wg.tasks.new(PwBaseWorkChain, name="bands", kpoints=bands_kpoints)
+    bands_task = wg.tasks.new(PwBaseWorkChain, name="bands", kpoints=bands_kpoints)
     bands_inputs.update(
         {
             "pw.code": code,
@@ -141,5 +141,5 @@ def bands_workgraph(
             "pw.parameters": bands_parameters.outputs[0],
         }
     )
-    bands_node.set(bands_inputs)
+    bands_task.set(bands_inputs)
     return wg

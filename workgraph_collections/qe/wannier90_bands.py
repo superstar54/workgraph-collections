@@ -1,5 +1,5 @@
 from aiida import orm
-from aiida_workgraph import WorkGraph, task, build_node
+from aiida_workgraph import WorkGraph, task, build_task
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 from aiida_wannier90_workflows.workflows.base.wannier90 import Wannier90BaseWorkChain
 from aiida_wannier90_workflows.workflows.base.projwfc import ProjwfcBaseWorkChain
@@ -11,7 +11,7 @@ from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis im
 )
 
 
-SeekpathNode = build_node(
+SeekpathTask = build_task(
     seekpath_structure_analysis,
     outputs=[
         ["General", "primitive_structure"],
@@ -100,19 +100,19 @@ def wannier90_bands_workgraph(
     wg.context = {}
     # -------- seekpath -----------
     if bands_kpoints_distance is not None:
-        seekpath_node = wg.tasks.new(
-            SeekpathNode,
+        seekpath_task = wg.tasks.new(
+            SeekpathTask,
             name="seekpath",
             structure=structure,
             kwargs={"reference_distance": orm.Float(bands_kpoints_distance)},
         )
-        structure = seekpath_node.outputs["primitive_structure"]
-        inspect_seekpath_node = wg.tasks.new(
+        structure = seekpath_task.outputs["primitive_structure"]
+        inspect_seekpath_task = wg.tasks.new(
             inspect_seekpath,
             name="inspect_seekpath",
-            parameters=seekpath_node.outputs["parameters"],
+            parameters=seekpath_task.outputs["parameters"],
         )
-        kpoint_path = inspect_seekpath_node.outputs["kpoint_path"]
+        kpoint_path = inspect_seekpath_task.outputs["kpoint_path"]
     # -------- scf -----------
     if run_scf:
         scf_task = wg.tasks.new(PwBaseWorkChain, name="scf")
@@ -229,7 +229,7 @@ def wannier90_bands_workgraph(
             "wannier90.structure": structure,
             "wannier90.code": codes.get("wannier90"),
             "wannier90.remote_input_folder": pw2wannier90.outputs["remote_folder"],
-            "wannier90.kpoint_path": inspect_seekpath_node.outputs["kpoint_path"],
+            "wannier90.kpoint_path": inspect_seekpath_task.outputs["kpoint_path"],
         }
     )
     wannier90.set(wannier90_inputs)

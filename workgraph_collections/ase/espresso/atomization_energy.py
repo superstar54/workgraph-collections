@@ -21,7 +21,7 @@ def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
     pw_mol = wg.tasks.new(
         pw_calculator, name="scf_mol", run_remotely=True, atoms=molecule
     )
-    # create the node to calculate the atomization energy
+    # create the task to calculate the atomization energy
     wg.tasks.new(
         calc_atomization_energy,
         name="calc_atomization_energy",

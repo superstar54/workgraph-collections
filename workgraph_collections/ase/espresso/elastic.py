@@ -144,7 +144,7 @@ def elastic_workgraph(
         )
         atoms = relax_task.outputs["atoms"]
     # -------- deformed_structure -----------
-    deformed_structure_node = wg.tasks.new(
+    deformed_structure_task = wg.tasks.new(
         get_deformed_structure_set,
         name="deformed_structure",
         atoms=atoms,
@@ -156,10 +156,10 @@ def elastic_workgraph(
         run_remotely=True,
     )
     # -------- run_relaxation -----------
-    run_relaxation_node = wg.tasks.new(
+    run_relaxation_task = wg.tasks.new(
         run_relaxation,
         name="run_relaxation",
-        deformed_structure_set=deformed_structure_node.outputs["result"],
+        deformed_structure_set=deformed_structure_task.outputs["result"],
         relax_inputs={
             "command": command,
             "input_data": input_data,
@@ -175,8 +175,8 @@ def elastic_workgraph(
         fit_elastic_constants,
         name="fit_elastic",
         atoms=atoms,
-        deformed_structure_set=deformed_structure_node.outputs["result"],
-        relax_results=run_relaxation_node.outputs["relax_results"],
+        deformed_structure_set=deformed_structure_task.outputs["result"],
+        relax_results=run_relaxation_task.outputs["relax_results"],
         symmetry=symmetry,
         computer=computer,
         metadata=metadata,
