@@ -1,8 +1,8 @@
-from aiida_workgraph import node
+from aiida_workgraph import task
 from ase import Atoms
 
 
-@node(outputs=[["General", "atoms"], ["General", "results"]])
+@task(outputs=[["General", "atoms"], ["General", "results"]])
 def gpaw_calculator(
     atoms: Atoms, seed: str = "GaAs", kpts: dict = None, **kwargs: dict
 ):

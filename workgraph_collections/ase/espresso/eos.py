@@ -1,9 +1,9 @@
-from aiida_workgraph import node, WorkGraph
+from aiida_workgraph import task, WorkGraph
 from workgraph_collections.ase.common.eos import generate_scaled_atoms, fit_eos
 from ase import Atoms
 
 
-@node.graph_builder(outputs=[["context.results", "scf_results"]])
+@task.graph_builder(outputs=[["context.results", "scf_results"]])
 def all_scf(scaled_atoms, scf_inputs):
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
@@ -14,7 +14,7 @@ def all_scf(scaled_atoms, scf_inputs):
     # becareful, we generate new data here, thus break the data provenance!
     # that's why I put the scaled atoms in the context, so that we can link them
     for key, atoms in scaled_atoms.value.items():
-        scf = wg.nodes.new(
+        scf = wg.tasks.new(
             pw_calculator, name=f"scf_{key}", atoms=atoms, run_remotely=True
         )
         scf.set(scf_inputs)
@@ -23,7 +23,7 @@ def all_scf(scaled_atoms, scf_inputs):
     return wg
 
 
-@node.graph_builder(outputs=[["fit_eos.result", "result"]])
+@task.graph_builder(outputs=[["fit_eos.result", "result"]])
 def eos_workgraph(
     atoms: Atoms = None,
     command: str = "pw.x",
@@ -49,7 +49,7 @@ def eos_workgraph(
     wg = WorkGraph("EOS")
     # -------- relax -----------
     if run_relax:
-        relax_node = wg.nodes.new(
+        relax_task = wg.tasks.new(
             pw_calculator,
             name="relax",
             atoms=atoms,
@@ -60,7 +60,7 @@ def eos_workgraph(
         relax_input_data = deepcopy(input_data)
         relax_input_data.setdefault("CONTROL", {})
         relax_input_data["CONTROL"]["calculation"] = "vc-relax"
-        relax_node.set(
+        relax_task.set(
             {
                 "command": command,
                 "input_data": relax_input_data,
@@ -69,9 +69,9 @@ def eos_workgraph(
                 "pseudo_dir": pseudo_dir,
             }
         )
-        atoms = relax_node.outputs["atoms"]
+        atoms = relax_task.outputs["atoms"]
     # -------- scale_atoms -----------
-    scale_atoms_node = wg.nodes.new(
+    scale_atoms_node = wg.tasks.new(
         generate_scaled_atoms,
         name="scale_atoms",
         atoms=atoms,
@@ -81,7 +81,7 @@ def eos_workgraph(
         run_remotely=True,
     )
     # -------- all_scf -----------
-    all_scf1 = wg.nodes.new(
+    all_scf1 = wg.tasks.new(
         all_scf,
         name="all_scf",
         scaled_atoms=scale_atoms_node.outputs["scaled_atoms"],
@@ -96,7 +96,7 @@ def eos_workgraph(
         },
     )
     # -------- fit_eos -----------
-    wg.nodes.new(
+    wg.tasks.new(
         fit_eos,
         name="fit_eos",
         volumes=scale_atoms_node.outputs["volumes"],

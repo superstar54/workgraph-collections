@@ -1,8 +1,8 @@
-from aiida_workgraph import node
+from aiida_workgraph import task
 from ase import Atoms
 
 
-@node(outputs=[["General", "results"]])
+@task(outputs=[["General", "results"]])
 def emt_calculator(atoms: Atoms) -> float:
     from ase.calculators.emt import EMT
 

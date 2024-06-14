@@ -1,10 +1,10 @@
-from aiida_workgraph import WorkGraph, node
+from aiida_workgraph import WorkGraph, task
 from ase import Atoms
 from .base import pw_calculator, dos_calculator, projwfc_calculator
 from aiida import orm
 
 
-@node.graph_builder()
+@task.graph_builder()
 def pdos_workgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",
@@ -23,7 +23,7 @@ def pdos_workgraph(
     wg = WorkGraph("PDOS")
     # -------- relax -----------
     if run_relax:
-        relax_node = wg.nodes.new(
+        relax_task = wg.tasks.new(
             pw_calculator,
             name="relax",
             atoms=atoms,
@@ -34,11 +34,11 @@ def pdos_workgraph(
             run_remotely=True,
         )
         relax_inputs = inputs.get("relax", {})
-        relax_node.set(relax_inputs)
-        atoms = relax_node.outputs["atoms"]
+        relax_task.set(relax_inputs)
+        atoms = relax_task.outputs["atoms"]
     # -------- scf -----------
     if run_scf:
-        scf_node = wg.nodes.new(
+        scf_task = wg.tasks.new(
             pw_calculator,
             name="scf",
             atoms=atoms,
@@ -49,10 +49,10 @@ def pdos_workgraph(
             run_remotely=True,
         )
         scf_inputs = inputs.get("scf", {})
-        scf_node.set(scf_inputs)
-        scf_parent_folder = scf_node.outputs["remote_folder"]
+        scf_task.set(scf_inputs)
+        scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- nscf -----------
-    nscf_node = wg.nodes.new(
+    nscf_task = wg.tasks.new(
         pw_calculator,
         name="nscf",
         atoms=atoms,
@@ -66,31 +66,31 @@ def pdos_workgraph(
         run_remotely=True,
     )
     nscf_inputs = inputs.get("nscf", {})
-    nscf_node.set(nscf_inputs)
+    nscf_task.set(nscf_inputs)
     # -------- dos -----------
-    dos_node = wg.nodes.new(
+    dos_task = wg.tasks.new(
         dos_calculator,
         name="dos",
         command=dos_command,
-        parent_folder=nscf_node.outputs["remote_folder"],
+        parent_folder=nscf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
         run_remotely=True,
     )
     dos_input = inputs.get("dos", {"input_data": {}})
     dos_input["input_data"].update({"outdir": "parent_folder"})
-    dos_node.set(dos_input)
+    dos_task.set(dos_input)
     # -------- projwfc -----------
-    projwfc_node = wg.nodes.new(
+    projwfc_task = wg.tasks.new(
         projwfc_calculator,
         name="projwfc",
         command=projwfc_command,
-        parent_folder=nscf_node.outputs["remote_folder"],
+        parent_folder=nscf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
         run_remotely=True,
     )
     projwfc_input = inputs.get("projwfc", {"input_data": {}})
     projwfc_input["input_data"].update({"outdir": "parent_folder"})
-    projwfc_node.set(projwfc_input)
+    projwfc_task.set(projwfc_input)
     return wg

@@ -1,9 +1,9 @@
-from aiida_workgraph import node, WorkGraph
+from aiida_workgraph import task, WorkGraph
 from .base import gpaw_calculator
 from ase import Atoms
 
 
-@node()
+@task()
 def wannier90(
     seed: str = "GaAs",
     binary: str = "wannier90.x",
@@ -29,22 +29,22 @@ def wannier90(
     os.system(f"{binary} " + seed)
 
 
-@node.graph_builder()
+@task.graph_builder()
 def wannier90_workgraph(
     atoms: Atoms = None,
 ):
     """Workgraph for Wannier90 calculation."""
     wg = WorkGraph("Wannier90")
-    scf_node = wg.nodes.new(
+    scf_task = wg.tasks.new(
         gpaw_calculator,
         name="scf",
         atoms=atoms,
         run_remotely=True,
     )
-    wg.nodes.new(
+    wg.tasks.new(
         wannier90,
         name="wannier90",
-        parent_folder=scf_node.outputs["remote_folder"],
+        parent_folder=scf_task.outputs["remote_folder"],
         run_remotely=True,
     )
     return wg

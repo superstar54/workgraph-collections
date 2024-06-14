@@ -1,4 +1,4 @@
-from aiida_workgraph import node, WorkGraph
+from aiida_workgraph import task, WorkGraph
 from workgraph_collections.ase.common.xps import (
     get_marked_atoms,
     get_non_equivalent_site,
@@ -9,7 +9,7 @@ from ase import Atoms
 from copy import deepcopy
 
 
-@node.graph_builder(outputs=[["context.scf", "results"]])
+@task.graph_builder(outputs=[["context.scf", "results"]])
 def run_scf(
     marked_atoms: dict,
     command: str = None,
@@ -30,7 +30,7 @@ def run_scf(
     wg = WorkGraph()
     wg.context = {"marked_atoms": marked_atoms}
     marked_atoms = marked_atoms.value
-    scf_ground = wg.nodes.new(
+    scf_ground = wg.tasks.new(
         pw_calculator,
         name="ground",
         atoms=marked_atoms.pop("ground"),
@@ -51,7 +51,7 @@ def run_scf(
     # becareful, we generate new data here, thus break the data provenance!
     # that's why I put the marked atoms in the context, so that we can link them
     for key, atoms in marked_atoms.items():
-        scf = wg.nodes.new(
+        scf = wg.tasks.new(
             pw_calculator,
             name=f"scf_{key}",
             atoms=atoms,
@@ -108,7 +108,7 @@ def run_scf(
     return wg
 
 
-@node.graph_builder(outputs=[["binding_energy.result", "result"]])
+@task.graph_builder(outputs=[["binding_energy.result", "result"]])
 def xps_workgraph(
     atoms: Atoms = None,
     atoms_list: list = None,
@@ -131,7 +131,7 @@ def xps_workgraph(
     wg = WorkGraph("XPS")
     # -------- relax -----------
     if run_relax:
-        relax_node = wg.nodes.new(
+        relax_task = wg.tasks.new(
             pw_calculator,
             name="relax",
             atoms=atoms,
@@ -141,11 +141,11 @@ def xps_workgraph(
         input_data = Namelist(relax_inputs.get("input_data", {})).to_nested(binary="pw")
         input_data["CONTROL"]["calculation"] = "relax"
         relax_inputs["input_data"] = input_data
-        relax_node.set(relax_inputs)
-        atoms = relax_node.outputs["atoms"]
+        relax_task.set(relax_inputs)
+        atoms = relax_task.outputs["atoms"]
     # -------- marked_atoms -----------
     if atoms_list:
-        marked_atoms_node = wg.nodes.new(
+        marked_atoms_node = wg.tasks.new(
             get_marked_atoms,
             name="marked_atoms",
             atoms=atoms,
@@ -154,7 +154,7 @@ def xps_workgraph(
             metadata=metadata,
         )
     elif element_list:
-        marked_atoms_node = wg.nodes.new(
+        marked_atoms_node = wg.tasks.new(
             get_non_equivalent_site,
             name="marked_atoms",
             atoms=atoms,
@@ -164,17 +164,17 @@ def xps_workgraph(
         )
     else:
         raise "Either atoms_list or element_list should be provided."
-    run_scf_node = wg.nodes.new(
+    run_scf_task = wg.tasks.new(
         run_scf,
         name="run_scf",
         marked_atoms=marked_atoms_node.outputs["result"],
     )
-    run_scf_node.set(scf_inputs)
-    wg.nodes.new(
+    run_scf_task.set(scf_inputs)
+    wg.tasks.new(
         binding_energy,
         name="binding_energy",
         corrections=corrections,
-        scf_outputs=run_scf_node.outputs["results"],
+        scf_outputs=run_scf_task.outputs["results"],
         run_remotely=True,
         metadata=metadata,
     )

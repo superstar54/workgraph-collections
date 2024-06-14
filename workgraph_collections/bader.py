@@ -1,7 +1,7 @@
-from aiida_workgraph import node
+from aiida_workgraph import task
 
 
-@node()
+@task()
 def bader_calculator(
     command: str = "pw.x",
     charge_density_folder: str = "./",

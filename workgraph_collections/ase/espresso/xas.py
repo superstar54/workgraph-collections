@@ -1,4 +1,4 @@
-from aiida_workgraph import node, WorkGraph
+from aiida_workgraph import task, WorkGraph
 from workgraph_collections.ase.common.xps import (
     get_non_equivalent_site,
 )
@@ -6,7 +6,7 @@ from ase import Atoms
 from workgraph_collections.ase.espresso.base import pw_calculator
 
 
-@node.graph_builder(
+@task.graph_builder(
     outputs=[["context.scf_results", "scf"], ["context.xspectra_results", "xspectra"]]
 )
 def run_all_xspectra_prod(
@@ -28,7 +28,7 @@ def run_all_xspectra_prod(
     marked_atoms = marked_atoms.value
     marked_atoms.pop("supercell")
     for key, data in marked_atoms.items():
-        scf_node = wg.nodes.new(
+        scf_task = wg.tasks.new(
             pw_calculator,
             name="scf",
             command=commands["pw"],
@@ -65,15 +65,15 @@ def run_all_xspectra_prod(
                     "tot_charge": 1,
                 }
             )
-        scf_node.set(scf_inputs)
-        scf_node.to_context = [["results", f"scf_results.{key}"]]
+        scf_task.set(scf_inputs)
+        scf_task.to_context = [["results", f"scf_results.{key}"]]
         for calc_number, vector in enumerate(eps_vectors):
-            xspectra_node = wg.nodes.new(
+            xspectra_node = wg.tasks.new(
                 xspectra_calculator,
                 name=f"xspectra_{key}_{calc_number}",
                 command=commands["xspectra"],
                 run_remotely=True,
-                parent_folder=scf_node.outputs["remote_folder"],
+                parent_folder=scf_task.outputs["remote_folder"],
                 parent_output_folder="out",
                 parent_folder_name="out",
                 metadata=metadata,
@@ -91,7 +91,7 @@ def run_all_xspectra_prod(
     return wg
 
 
-@node.graph_builder(outputs=[["binding_energy.result", "result"]])
+@task.graph_builder(outputs=[["binding_energy.result", "result"]])
 def xas_workgraph(
     atoms: Atoms = None,
     commands: dict = None,
@@ -116,7 +116,7 @@ def xas_workgraph(
     wg = WorkGraph("xas")
     # -------- relax -----------
     if run_relax:
-        relax_node = wg.nodes.new(
+        relax_task = wg.tasks.new(
             pw_calculator,
             name="relax",
             atoms=atoms,
@@ -124,10 +124,10 @@ def xas_workgraph(
             run_remotely=True,
         )
         relax_inputs = inputs.get("relax", {})
-        relax_node.set(relax_inputs)
-        atoms = relax_node.outputs["atoms"]
+        relax_task.set(relax_inputs)
+        atoms = relax_task.outputs["atoms"]
     # -------- marked_atoms -----------
-    marked_atoms_node = wg.nodes.new(
+    marked_atoms_node = wg.tasks.new(
         get_non_equivalent_site,
         name="marked_atoms",
         atoms=atoms,
@@ -137,7 +137,7 @@ def xas_workgraph(
         metadata=metadata,
     )
     # -------- xspectra -----------
-    wg.nodes.new(
+    wg.tasks.new(
         run_all_xspectra_prod,
         name="run_all_xspectra_prod",
         marked_atoms=marked_atoms_node.outputs["result"],
@@ -147,7 +147,7 @@ def xas_workgraph(
         core_hole_pseudos=core_hole_pseudos,
         core_hole_treatment=core_hole_treatment,
     )
-    # wg.nodes.new(
+    # wg.tasks.new(
     #     binding_energy,
     #     name="binding_energy",
     #     corrections=corrections,

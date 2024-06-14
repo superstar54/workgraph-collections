@@ -1,5 +1,5 @@
 from aiida import orm
-from aiida_workgraph import WorkGraph, node, build_node
+from aiida_workgraph import WorkGraph, task, build_node
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 from aiida_wannier90_workflows.workflows.base.wannier90 import Wannier90BaseWorkChain
 from aiida_wannier90_workflows.workflows.base.projwfc import ProjwfcBaseWorkChain
@@ -22,7 +22,7 @@ SeekpathNode = build_node(
 )
 
 
-@node.calcfunction(outputs=[["General", "kpoint_path"]])
+@task.calcfunction(outputs=[["General", "kpoint_path"]])
 def inspect_seekpath(parameters):
     """Inspect seekpath calculation."""
     parameters = parameters.get_dict()
@@ -35,7 +35,7 @@ def inspect_seekpath(parameters):
     return kpoint_path
 
 
-@node.calcfunction()
+@task.calcfunction()
 def prepare_wannier90_pp_inputs(
     parameters, scf_output_parameters=None, nscf_output_parameters=None
 ):
@@ -55,7 +55,7 @@ def prepare_wannier90_pp_inputs(
     return orm.Dict(parameters)
 
 
-@node.graph_builder()
+@task.graph_builder()
 def wannier90_bands_workgraph(
     structure: orm.StructureData = None,
     codes: dict = None,
@@ -100,14 +100,14 @@ def wannier90_bands_workgraph(
     wg.context = {}
     # -------- seekpath -----------
     if bands_kpoints_distance is not None:
-        seekpath_node = wg.nodes.new(
+        seekpath_node = wg.tasks.new(
             SeekpathNode,
             name="seekpath",
             structure=structure,
             kwargs={"reference_distance": orm.Float(bands_kpoints_distance)},
         )
         structure = seekpath_node.outputs["primitive_structure"]
-        inspect_seekpath_node = wg.nodes.new(
+        inspect_seekpath_node = wg.tasks.new(
             inspect_seekpath,
             name="inspect_seekpath",
             parameters=seekpath_node.outputs["parameters"],
@@ -115,15 +115,15 @@ def wannier90_bands_workgraph(
         kpoint_path = inspect_seekpath_node.outputs["kpoint_path"]
     # -------- scf -----------
     if run_scf:
-        scf_node = wg.nodes.new(PwBaseWorkChain, name="scf")
+        scf_task = wg.tasks.new(PwBaseWorkChain, name="scf")
         scf_inputs.update({"pw.structure": structure, "pw.code": codes.get("pw")})
-        scf_node.set(scf_inputs)
-        scf_parent_folder = scf_node.outputs["remote_folder"]
-        scf_output_parameters = scf_node.outputs["output_parameters"]
-        output_band = scf_node.outputs["output_band"]
+        scf_task.set(scf_inputs)
+        scf_parent_folder = scf_task.outputs["remote_folder"]
+        scf_output_parameters = scf_task.outputs["output_parameters"]
+        output_band = scf_task.outputs["output_band"]
     # -------- nscf -----------
     if run_nscf:
-        nscf_node = wg.nodes.new(PwBaseWorkChain, name="nscf")
+        nscf_task = wg.tasks.new(PwBaseWorkChain, name="nscf")
         nscf_inputs.update(
             {
                 "pw.structure": structure,
@@ -131,13 +131,13 @@ def wannier90_bands_workgraph(
                 "pw.parent_folder": scf_parent_folder,
             }
         )
-        nscf_node.set(nscf_inputs)
-        nscf_parent_folder = nscf_node.outputs["remote_folder"]
-        nscf_output_parameters = nscf_node.outputs["output_parameters"]
-        output_band = nscf_node.outputs["output_band"]
+        nscf_task.set(nscf_inputs)
+        nscf_parent_folder = nscf_task.outputs["remote_folder"]
+        nscf_output_parameters = nscf_task.outputs["output_parameters"]
+        output_band = nscf_task.outputs["output_band"]
     # -------- projwfc -----------
     if run_projwfc:
-        projwfc_node = wg.nodes.new(
+        projwfc_task = wg.tasks.new(
             ProjwfcBaseWorkChain,
             name="projwfc",
         )
@@ -147,18 +147,18 @@ def wannier90_bands_workgraph(
                 "projwfc.parent_folder": nscf_parent_folder,
             }
         )
-        projwfc_node.set(projwfc_inputs)
-        bands = projwfc_node.outputs["bands"]
-        bands_projections = projwfc_node.outputs["projections"]
+        projwfc_task.set(projwfc_inputs)
+        bands = projwfc_task.outputs["bands"]
+        bands_projections = projwfc_task.outputs["projections"]
     # -------- wannier90_pp -----------
-    wannier90_pp_parameters = wg.nodes.new(
+    wannier90_pp_parameters = wg.tasks.new(
         prepare_wannier90_pp_inputs,
         name="wannier90_pp_parameters",
         parameters=wannier90_pp_inputs["wannier90"].get("parameters"),
         scf_output_parameters=scf_output_parameters,
         nscf_output_parameters=nscf_output_parameters,
     )
-    wannier90_pp = wg.nodes.new(
+    wannier90_pp = wg.tasks.new(
         Wannier90BaseWorkChain,
         name="wannier90_pp",
     )
@@ -212,13 +212,13 @@ def wannier90_bands_workgraph(
             }
         )
 
-    pw2wannier90 = wg.nodes.new(
+    pw2wannier90 = wg.tasks.new(
         Pw2wannier90BaseWorkChain,
         name="pw2wannier90",
     )
     pw2wannier90.set(pw2wannier90_inputs)
     # -------- wannier90 -----------
-    wannier90 = wg.nodes.new(Wannier90BaseWorkChain, name="wannier90")
+    wannier90 = wg.tasks.new(Wannier90BaseWorkChain, name="wannier90")
     wannier90_inputs.pop("shift_energy_windows", None)
     wannier90_inputs.pop("auto_energy_windows", None)
     wannier90_inputs.pop("auto_energy_windows_threshold", None)

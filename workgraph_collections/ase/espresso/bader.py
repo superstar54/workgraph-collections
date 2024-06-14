@@ -1,10 +1,10 @@
-from aiida_workgraph import WorkGraph, node
+from aiida_workgraph import WorkGraph, task
 from ase import Atoms
 from .base import pw_calculator, pp_calculator
 from workgraph_collections.bader import bader_calculator
 
 
-@node.graph_builder()
+@task.graph_builder()
 def bader_workgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",
@@ -23,7 +23,7 @@ def bader_workgraph(
         "current_number_of_bands": None,
     }
     # -------- scf -----------
-    scf_node = wg.nodes.new(
+    scf_task = wg.tasks.new(
         pw_calculator,
         name="scf",
         atoms=atoms,
@@ -34,14 +34,14 @@ def bader_workgraph(
         run_remotely=True,
     )
     scf_inputs = inputs.get("scf", {})
-    scf_node.set(scf_inputs)
+    scf_task.set(scf_inputs)
     # -------- pp valence -----------
-    pp_valence = wg.nodes.new(
+    pp_valence = wg.tasks.new(
         pp_calculator,
         name="pp_valence",
         command=pp_command,
         computer=computer,
-        parent_folder=scf_node.outputs["remote_folder"],
+        parent_folder=scf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
         run_remotely=True,
@@ -57,12 +57,12 @@ def bader_workgraph(
     }
     pp_valence.set(pp_valence_inputs)
     # -------- pp all -----------
-    pp_all = wg.nodes.new(
+    pp_all = wg.tasks.new(
         pp_calculator,
         name="pp_all",
         command=pp_command,
         computer=computer,
-        parent_folder=scf_node.outputs["remote_folder"],
+        parent_folder=scf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
         run_remotely=True,
@@ -78,7 +78,7 @@ def bader_workgraph(
     }
     pp_all.set(pp_all_inputs)
     # -------- bader -----------
-    bader_node = wg.nodes.new(
+    bader_task = wg.tasks.new(
         bader_calculator,
         name="bader",
         computer=computer,
@@ -87,8 +87,8 @@ def bader_workgraph(
         reference_charge_density_folder="pp_all_remote_folder",
         run_remotely=True,
     )
-    wg.links.new(pp_valence.outputs["remote_folder"], bader_node.inputs["copy_files"])
-    wg.links.new(pp_all.outputs["remote_folder"], bader_node.inputs["copy_files"])
+    wg.links.new(pp_valence.outputs["remote_folder"], bader_task.inputs["copy_files"])
+    wg.links.new(pp_all.outputs["remote_folder"], bader_task.inputs["copy_files"])
     bader_inputs = inputs.get("bader", {})
-    bader_node.set(bader_inputs)
+    bader_task.set(bader_inputs)
     return wg
