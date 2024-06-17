@@ -27,7 +27,7 @@ def run_scf(
     from aiida_workgraph import WorkGraph
     from .base import pw_calculator
 
-    wg = WorkGraph()
+    wg = WorkGraph("XPS")
     wg.context = {"marked_atoms": marked_atoms}
     marked_atoms = marked_atoms.value
     scf_ground = wg.tasks.new(

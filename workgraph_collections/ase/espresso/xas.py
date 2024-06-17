@@ -113,7 +113,7 @@ def xas_workgraph(
 
     inputs = inputs or {}
 
-    wg = WorkGraph("xas")
+    wg = WorkGraph("XAS")
     # -------- relax -----------
     if run_relax:
         relax_task = wg.tasks.new(
