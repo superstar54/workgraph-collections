@@ -2,7 +2,12 @@ from aiida_workgraph import task
 from ase import Atoms
 
 
-@task(outputs=[["General", "atoms"], ["General", "results"]])
+@task(
+    outputs=[
+        {"identifier": "General", "name": "atoms"},
+        {"identifier": "General", "name": "results"},
+    ]
+)
 def gpaw_calculator(
     atoms: Atoms, seed: str = "GaAs", kpts: dict = None, **kwargs: dict
 ):

@@ -3,7 +3,12 @@ from aiida import orm
 
 
 # explicitly define the output socket name to match the return value of the function
-@task.calcfunction(outputs=[["General", "structures"], ["General", "volumes"]])
+@task.calcfunction(
+    outputs=[
+        {"identifier": "General", "name": "structures"},
+        {"identifier": "General", "name": "volumes"},
+    ]
+)
 def scale_structure(structure: orm.StructureData, scales: list):
     """Scale the structure by the given scales."""
     atoms = structure.get_ase()

@@ -11,11 +11,17 @@ from aiida_quantumespresso.workflows.functions.get_marked_structures import (
 # add a output socket manually
 GetXspectraStructureTask = build_task(
     get_xspectra_structures,
-    outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
+    outputs=[
+        {"identifier": "General", "name": "output_parameters"},
+        {"identifier": "General", "name": "marked_structures"},
+    ],
 )
 GetMarkedStructuresTask = build_task(
     get_marked_structures,
-    outputs=[["General", "output_parameters"], ["General", "marked_structures"]],
+    outputs=[
+        {"identifier": "General", "name": "output_parameters"},
+        {"identifier": "General", "name": "marked_structures"},
+    ],
 )
 
 

@@ -2,7 +2,12 @@ from aiida_workgraph import task
 from ase import Atoms
 
 
-@task(outputs=[["General", "scaled_atoms"], ["General", "volumes"]])
+@task(
+    outputs=[
+        {"identifier": "General", "name": "scaled_atoms"},
+        {"identifier": "General", "name": "volumes"},
+    ]
+)
 def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
     """Scale the structure by the given scales."""
     volumes = {}
