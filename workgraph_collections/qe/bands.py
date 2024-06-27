@@ -12,7 +12,10 @@ from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis im
 # Add only two outputs port here, because we only use these outputs in the following.
 SeekpathTask = build_task(
     seekpath_structure_analysis,
-    outputs=[["General", "primitive_structure"], ["General", "explicit_kpoints"]],
+    outputs=[
+        {"identifier": "General", "name": "primitive_structure"},
+        {"identifier": "General", "name": "explicit_kpoints"},
+    ],
 )
 
 

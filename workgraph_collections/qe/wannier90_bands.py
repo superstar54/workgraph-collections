@@ -14,15 +14,15 @@ from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis im
 SeekpathTask = build_task(
     seekpath_structure_analysis,
     outputs=[
-        ["General", "primitive_structure"],
-        ["General", "explicit_kpoints"],
-        ["General", "parameters"],
-        ["General", "conv_structure"],
+        {"identifier": "General", "name": "primitive_structure"},
+        {"identifier": "General", "name": "explicit_kpoints"},
+        {"identifier": "General", "name": "parameters"},
+        {"identifier": "General", "name": "conv_structure"},
     ],
 )
 
 
-@task.calcfunction(outputs=[["General", "kpoint_path"]])
+@task.calcfunction(outputs=[{"identifier": "General", "name": "kpoint_path"}])
 def inspect_seekpath(parameters):
     """Inspect seekpath calculation."""
     parameters = parameters.get_dict()
