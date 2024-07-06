@@ -10,10 +10,7 @@ def all_scf(scaled_atoms, scf_inputs):
     from .base import pw_calculator
 
     wg = WorkGraph()
-    wg.context = {"scaled_atoms": scaled_atoms}
-    # becareful, we generate new data here, thus break the data provenance!
-    # that's why I put the scaled atoms in the context, so that we can link them
-    for key, atoms in scaled_atoms.value.items():
+    for key, atoms in scaled_atoms.items():
         scf = wg.tasks.new(
             pw_calculator, name=f"scf_{key}", atoms=atoms, run_remotely=True
         )
