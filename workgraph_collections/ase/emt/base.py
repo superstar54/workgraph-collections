@@ -8,4 +8,4 @@ def emt_calculator(atoms: Atoms) -> float:
 
     atoms.calc = EMT()
     atoms.get_potential_energy()
-    return {"results": atoms.calc.results}
+    return atoms.calc.results
