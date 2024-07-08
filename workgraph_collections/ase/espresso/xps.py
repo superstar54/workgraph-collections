@@ -31,10 +31,10 @@ def run_scf(
     wg.context = {"marked_atoms": marked_atoms}
     marked_atoms = marked_atoms.value
     scf_ground = wg.tasks.new(
-        pw_calculator,
+        "PythonJob",
+        function=pw_calculator,
         name="ground",
         atoms=marked_atoms.pop("ground"),
-        run_remotely=True,
         computer=computer,
         metadata=metadata,
     )
@@ -52,10 +52,10 @@ def run_scf(
     # that's why I put the marked atoms in the context, so that we can link them
     for key, atoms in marked_atoms.items():
         scf = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name=f"scf_{key}",
             atoms=atoms,
-            run_remotely=True,
             computer=computer,
             metadata=metadata,
         )
@@ -132,10 +132,10 @@ def xps_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="relax",
             atoms=atoms,
-            run_remotely=True,
         )
         relax_inputs = deepcopy(scf_inputs)
         input_data = Namelist(relax_inputs.get("input_data", {})).to_nested(binary="pw")
@@ -146,20 +146,20 @@ def xps_workgraph(
     # -------- marked_atoms -----------
     if atoms_list:
         marked_atoms_task = wg.tasks.new(
-            get_marked_atoms,
+            "PythonJob",
+            function=get_marked_atoms,
             name="marked_atoms",
             atoms=atoms,
             atoms_list=atoms_list,
-            run_remotely=True,
             metadata=metadata,
         )
     elif element_list:
         marked_atoms_task = wg.tasks.new(
-            get_non_equivalent_site,
+            "PythonJob",
+            function=get_non_equivalent_site,
             name="marked_atoms",
             atoms=atoms,
             element_list=element_list,
-            run_remotely=True,
             metadata=metadata,
         )
     else:
@@ -171,11 +171,11 @@ def xps_workgraph(
     )
     run_scf_task.set(scf_inputs)
     wg.tasks.new(
-        binding_energy,
+        "PythonJob",
+        function=binding_energy,
         name="binding_energy",
         corrections=corrections,
         scf_outputs=run_scf_task.outputs["results"],
-        run_remotely=True,
         metadata=metadata,
     )
     return wg

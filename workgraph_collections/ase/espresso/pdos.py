@@ -24,14 +24,14 @@ def pdos_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="relax",
             atoms=atoms,
             calculation="vc-relax",
             command=pw_command,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
-            run_remotely=True,
         )
         relax_inputs = inputs.get("relax", {})
         relax_task.set(relax_inputs)
@@ -39,21 +39,22 @@ def pdos_workgraph(
     # -------- scf -----------
     if run_scf:
         scf_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="scf",
             atoms=atoms,
             calculation="scf",
             command=pw_command,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
-            run_remotely=True,
         )
         scf_inputs = inputs.get("scf", {})
         scf_task.set(scf_inputs)
         scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- nscf -----------
     nscf_task = wg.tasks.new(
-        pw_calculator,
+        "PythonJob",
+        function=pw_calculator,
         name="nscf",
         atoms=atoms,
         calculation="nscf",
@@ -63,32 +64,31 @@ def pdos_workgraph(
         parent_folder=scf_parent_folder,
         parent_output_folder="out",
         parent_folder_name="out",
-        run_remotely=True,
     )
     nscf_inputs = inputs.get("nscf", {})
     nscf_task.set(nscf_inputs)
     # -------- dos -----------
     dos_task = wg.tasks.new(
-        dos_calculator,
+        "PythonJob",
+        function=dos_calculator,
         name="dos",
         command=dos_command,
         parent_folder=nscf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
-        run_remotely=True,
     )
     dos_input = inputs.get("dos", {"input_data": {}})
     dos_input["input_data"].update({"outdir": "parent_folder"})
     dos_task.set(dos_input)
     # -------- projwfc -----------
     projwfc_task = wg.tasks.new(
-        projwfc_calculator,
+        "PythonJob",
+        function=projwfc_calculator,
         name="projwfc",
         command=projwfc_command,
         parent_folder=nscf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
-        run_remotely=True,
     )
     projwfc_input = inputs.get("projwfc", {"input_data": {}})
     projwfc_input["input_data"].update({"outdir": "parent_folder"})

@@ -39,13 +39,13 @@ def bands_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="relax",
             atoms=atoms,
             command=pw_command,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
-            run_remotely=True,
         )
         relax_inputs = inputs.get("relax", {})
         relax_task.set(relax_inputs)
@@ -53,32 +53,33 @@ def bands_workgraph(
     # -------- scf -----------
     if run_scf:
         scf_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="scf",
             atoms=atoms,
             command=pw_command,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
-            run_remotely=True,
         )
         scf_inputs = inputs.get("scf", {})
         scf_task.set(scf_inputs)
         scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- kpoints path -----------
     find_kpoints_path_task = wg.tasks.new(
-        find_kpoint_path,
+        "PythonJob",
+        function=find_kpoint_path,
         name="find_kponits_path",
         atoms=atoms,
         path=kpoints_path,
         npoints=nkpoints,
         density=density,
-        run_remotely=True,
     )
     find_kpoints_path_inputs = inputs.get("find_kpoints_path", {})
     find_kpoints_path_task.set(find_kpoints_path_inputs)
     # -------- bands -----------
     bands_task = wg.tasks.new(
-        pw_calculator,
+        "PythonJob",
+        function=pw_calculator,
         name="bands",
         atoms=atoms,
         command=pw_command,
@@ -88,7 +89,6 @@ def bands_workgraph(
         parent_folder=scf_parent_folder,
         parent_output_folder="out",
         parent_folder_name="out",
-        run_remotely=True,
     )
     bands_inputs = inputs.get("bands", {})
     bands_task.set(bands_inputs)

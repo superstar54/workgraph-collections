@@ -24,27 +24,27 @@ def bader_workgraph(
     }
     # -------- scf -----------
     scf_task = wg.tasks.new(
-        pw_calculator,
+        "PythonJob",
+        function=pw_calculator,
         name="scf",
         atoms=atoms,
         command=pw_command,
         computer=computer,
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
-        run_remotely=True,
     )
     scf_inputs = inputs.get("scf", {})
     scf_task.set(scf_inputs)
     # -------- pp valence -----------
     pp_valence = wg.tasks.new(
-        pp_calculator,
+        "PythonJob",
+        function=pp_calculator,
         name="pp_valence",
         command=pp_command,
         computer=computer,
         parent_folder=scf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
-        run_remotely=True,
     )
     pp_valence_inputs = inputs.get("pp_valence", {})
     pp_valence_inputs["input_data"] = {
@@ -58,14 +58,14 @@ def bader_workgraph(
     pp_valence.set(pp_valence_inputs)
     # -------- pp all -----------
     pp_all = wg.tasks.new(
-        pp_calculator,
+        "PythonJob",
+        function=pp_calculator,
         name="pp_all",
         command=pp_command,
         computer=computer,
         parent_folder=scf_task.outputs["remote_folder"],
         parent_output_folder="out",
         parent_folder_name="out",
-        run_remotely=True,
     )
     pp_all_inputs = inputs.get("pp_all", {})
     pp_all_inputs["input_data"] = {
@@ -79,13 +79,13 @@ def bader_workgraph(
     pp_all.set(pp_all_inputs)
     # -------- bader -----------
     bader_task = wg.tasks.new(
-        bader_calculator,
+        "PythonJob",
+        function=bader_calculator,
         name="bader",
         computer=computer,
         command=bader_command,
         charge_density_folder="pp_valence_remote_folder",
         reference_charge_density_folder="pp_all_remote_folder",
-        run_remotely=True,
     )
     wg.links.new(pp_valence.outputs["remote_folder"], bader_task.inputs["copy_files"])
     wg.links.new(pp_all.outputs["remote_folder"], bader_task.inputs["copy_files"])

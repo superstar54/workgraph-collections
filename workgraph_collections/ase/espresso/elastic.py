@@ -39,7 +39,10 @@ def run_relaxation(
     # that's why I put the deformed_structure in the context, so that we can link them
     for i in range(len(deformed_atoms)):
         relax = wg.tasks.new(
-            pw_calculator, name=f"relax_{i}", atoms=deformed_atoms[i], run_remotely=True
+            "PythonJob",
+            function=pw_calculator,
+            name=f"relax_{i}",
+            atoms=deformed_atoms[i],
         )
         relax.set(relax_inputs)
         # save the output parameters to the context
@@ -124,11 +127,11 @@ def elastic_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="relax",
             atoms=atoms,
             calculation="vc-relax",
-            run_remotely=True,
             metadata=metadata,
             computer=computer,
         )
@@ -145,7 +148,8 @@ def elastic_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- deformed_structure -----------
     deformed_structure_task = wg.tasks.new(
-        get_deformed_structure_set,
+        "PythonJob",
+        function=get_deformed_structure_set,
         name="deformed_structure",
         atoms=atoms,
         norm_strains=norm_strains,
@@ -153,7 +157,6 @@ def elastic_workgraph(
         symmetry=symmetry,
         computer=computer,
         metadata=metadata,
-        run_remotely=True,
     )
     # -------- run_relaxation -----------
     run_relaxation_task = wg.tasks.new(
@@ -172,7 +175,8 @@ def elastic_workgraph(
     )
     # -------- fit_elastic -----------
     wg.tasks.new(
-        fit_elastic_constants,
+        "PythonJob",
+        function=fit_elastic_constants,
         name="fit_elastic",
         atoms=atoms,
         deformed_structure_set=deformed_structure_task.outputs["result"],
@@ -180,6 +184,5 @@ def elastic_workgraph(
         symmetry=symmetry,
         computer=computer,
         metadata=metadata,
-        run_remotely=True,
     )
     return wg
