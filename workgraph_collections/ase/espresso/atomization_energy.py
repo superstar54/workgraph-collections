@@ -16,18 +16,18 @@ def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
 
     wg = WorkGraph("Atomization energy")
     pw_atom = wg.tasks.new(
-        pw_calculator, name="scf_atom", run_remotely=True, atoms=atom
+        "PythonJob", function=pw_calculator, name="scf_atom", atoms=atom
     )
     pw_mol = wg.tasks.new(
-        pw_calculator, name="scf_mol", run_remotely=True, atoms=molecule
+        "PythonJob", function=pw_calculator, name="scf_mol", atoms=molecule
     )
     # create the task to calculate the atomization energy
     wg.tasks.new(
-        calc_atomization_energy,
+        "PythonJob",
+        function=calc_atomization_energy,
         name="calc_atomization_energy",
         molecule=molecule,
         atom_output=pw_atom.outputs["results"],
         molecule_output=pw_mol.outputs["results"],
-        run_remotely=True,
     )
     return wg

@@ -10,12 +10,9 @@ def all_scf(scaled_atoms, scf_inputs):
     from .base import pw_calculator
 
     wg = WorkGraph()
-    wg.context = {"scaled_atoms": scaled_atoms}
-    # becareful, we generate new data here, thus break the data provenance!
-    # that's why I put the scaled atoms in the context, so that we can link them
-    for key, atoms in scaled_atoms.value.items():
+    for key, atoms in scaled_atoms.items():
         scf = wg.tasks.new(
-            pw_calculator, name=f"scf_{key}", atoms=atoms, run_remotely=True
+            "PythonJob", function=pw_calculator, name=f"scf_{key}", atoms=atoms
         )
         scf.set(scf_inputs)
         # save the output parameters to the context
@@ -50,10 +47,10 @@ def eos_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="relax",
             atoms=atoms,
-            run_remotely=True,
             metadata=metadata,
             computer=computer,
         )
@@ -72,13 +69,13 @@ def eos_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- scale_atoms -----------
     scale_atoms_task = wg.tasks.new(
-        generate_scaled_atoms,
+        "PythonJob",
+        function=generate_scaled_atoms,
         name="scale_atoms",
         atoms=atoms,
         scales=scales,
         computer=computer,
         metadata=metadata,
-        run_remotely=True,
     )
     # -------- all_scf -----------
     all_scf1 = wg.tasks.new(
@@ -97,12 +94,12 @@ def eos_workgraph(
     )
     # -------- fit_eos -----------
     wg.tasks.new(
-        fit_eos,
+        "PythonJob",
+        function=fit_eos,
         name="fit_eos",
         volumes=scale_atoms_task.outputs["volumes"],
         scf_results=all_scf1.outputs["scf_results"],
         computer=computer,
         metadata=metadata,
-        run_remotely=True,
     )
     return wg

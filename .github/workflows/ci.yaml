@@ -1,0 +1,58 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+
+    pre-commit:
+
+        runs-on: ubuntu-latest
+
+        steps:
+        -   uses: actions/checkout@v2
+
+        -   name: Cache Python dependencies
+            uses: actions/cache@v1
+            with:
+                path: ~/.cache/pip
+                key: pip-pre-commit-${{ hashFiles('**/setup.json') }}
+                restore-keys:
+                    pip-pre-commit-
+
+        -   name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+                python-version: '3.10'
+
+        -   name: Install Python dependencies
+            run: pip install -e .[pre-commit,tests]
+
+        -   name: Run pre-commit
+            run: pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
+
+    test:
+
+        runs-on: aiidalab/aiidalab-qe:latest
+
+        steps:
+        -   uses: actions/checkout@v2
+
+        -   name: Install system dependencies
+            run: sudo apt update && sudo apt install --no-install-recommends libfftw3-dev quantum-espresso
+
+        -   name: Install Python dependencies
+            run: |
+                pip install -e .[pre-commit,tests]
+                pip list
+
+        -   name: Run pytest
+            env:
+                AIIDA_WARN_v3: 1
+            run: |
+                pytest -v tests --cov
+
+        -   name: Upload coverage reports to Codecov
+            uses: codecov/codecov-action@v4.0.1
+            with:
+                token: ${{ secrets.CODECOV_TOKEN }}
+                flags: python-${{ matrix.python-version }}

@@ -4,8 +4,8 @@ from ase import Atoms
 
 @task(
     outputs=[
-        {"identifier": "General", "name": "scaled_atoms"},
-        {"identifier": "General", "name": "volumes"},
+        {"name": "scaled_atoms", "identifier": "Namespace"},
+        {"name": "volumes"},
     ]
 )
 def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:

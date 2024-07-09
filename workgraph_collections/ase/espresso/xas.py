@@ -29,11 +29,11 @@ def run_all_xspectra_prod(
     marked_atoms.pop("supercell")
     for key, data in marked_atoms.items():
         scf_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="scf",
             command=commands["pw"],
             atoms=data["atoms"],
-            run_remotely=True,
             metadata=metadata,
         )
         scf_inputs = inputs.get("pw", {})
@@ -69,10 +69,10 @@ def run_all_xspectra_prod(
         scf_task.to_context = [["results", f"scf_results.{key}"]]
         for calc_number, vector in enumerate(eps_vectors):
             xspectra_task = wg.tasks.new(
-                xspectra_calculator,
+                "PythonJob",
+                function=xspectra_calculator,
                 name=f"xspectra_{key}_{calc_number}",
                 command=commands["xspectra"],
-                run_remotely=True,
                 parent_folder=scf_task.outputs["remote_folder"],
                 parent_output_folder="out",
                 parent_folder_name="out",
@@ -117,23 +117,23 @@ def xas_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.tasks.new(
-            pw_calculator,
+            "PythonJob",
+            function=pw_calculator,
             name="relax",
             atoms=atoms,
             calculation="vc-relax",
-            run_remotely=True,
         )
         relax_inputs = inputs.get("relax", {})
         relax_task.set(relax_inputs)
         atoms = relax_task.outputs["atoms"]
     # -------- marked_atoms -----------
     marked_atoms_task = wg.tasks.new(
-        get_non_equivalent_site,
+        "PythonJob",
+        function=get_non_equivalent_site,
         name="marked_atoms",
         atoms=atoms,
         element_list=element_list,
         is_molecule=is_molecule,
-        run_remotely=True,
         metadata=metadata,
     )
     # -------- xspectra -----------
