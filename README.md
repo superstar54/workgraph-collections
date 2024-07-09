@@ -1,5 +1,7 @@
 # workgraph-collections
 [![PyPI version](https://badge.fury.io/py/workgraph-collections.svg)](https://badge.fury.io/py/workgraph-collections)
+[![Unit test](https://github.com/superstar54/workgraph-collections/actions/workflows/ci.yaml/badge.svg)](https://github.com/superstar54/workgraph-collections/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/superstar54/workgraph-collections/branch/main/graph/badge.svg)](https://codecov.io/gh/superstar54/workgraph-collections)
 [![Docs status](https://readthedocs.org/projects/workgraph-collections/badge)](http://workgraph-collections.readthedocs.io/)
 
 
