@@ -1,5 +1,5 @@
 from aiida_workgraph import task, WorkGraph
-from workgraph_collections.ase.common.xps import (
+from workgraph_collections.ase.common.core_level import (
     get_marked_atoms,
     get_non_equivalent_site,
     binding_energy,

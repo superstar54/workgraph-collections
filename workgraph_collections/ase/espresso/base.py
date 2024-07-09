@@ -147,3 +147,52 @@ def xspectra_calculator(
 
     results = calc.get_property("xspectra", Atoms())
     return {"results": results}
+
+
+@task(outputs=[{"name": "results"}])
+def vibrations(
+    atoms: Atoms,
+    pseudopotentials: dict,
+    kpts: list = None,
+    kspacing: float = None,
+    command: str = "pw.x",
+    input_data: dict = None,
+    pseudo_dir: str = "./pseudopotentials",
+    indices: list = None,
+) -> dict:
+    """Run a vibrational analysis on the given atoms object."""
+    from ase.io.espresso import Namelist
+    from ase_quantumespresso.espresso import Espresso, EspressoProfile
+    from ase.vibrations import Vibrations
+
+    input_data = {} if input_data is None else input_data
+
+    profile = EspressoProfile(command=command, pseudo_dir=pseudo_dir)
+
+    input_data = Namelist(input_data)
+    input_data.to_nested(binary="pw")
+    # set the calculation type
+    input_data.setdefault("CONTROL", {})
+    input_data["CONTROL"]["calculation"] = "scf"
+    input_data["CONTROL"]["tprnfor"] = True
+
+    # Set the output directory
+    input_data.setdefault("CONTROL", {})
+    input_data["CONTROL"]["outdir"] = "out"
+
+    calc = Espresso(
+        profile=profile,
+        pseudopotentials=pseudopotentials,
+        input_data=input_data,
+        kpts=kpts,
+        kspacing=kspacing,
+    )
+
+    atoms.calc = calc
+
+    vib = Vibrations(atoms, indices=indices)
+    vib.run()
+    vib.write_jmol()
+    vib.write_dos()
+    energies = vib.get_energies()
+    return {"energies": energies}

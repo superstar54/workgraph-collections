@@ -2,7 +2,9 @@ from aiida_workgraph import task
 from ase import Atoms
 
 
-@task()
+@task(
+    outputs=[{"name": "structures", "identifier": "Namespace"}, {"name": "parameters"}]
+)
 def get_non_equivalent_site(
     atoms: Atoms = None,
     min_cell_length: float = 4.0,
@@ -10,13 +12,17 @@ def get_non_equivalent_site(
     marker: str = "X",
     is_molecule: bool = True,
 ):
+    """Get the non-equivalent sites for a molecule or a crystal structure."""
     from pymatgen.symmetry.analyzer import PointGroupAnalyzer, SpacegroupAnalyzer
     from pymatgen.io.ase import AseAtomsAdaptor
     from ase.build import make_supercell
     import numpy as np
 
+    # use all elements except H
+    structures = {}
+    parameters = {}
     if element_list is None:
-        raise "Elements shoud not be None."
+        element_list = list(set(atoms.get_chemical_symbols()) - {"H"})
     if is_molecule:
         structure = AseAtomsAdaptor().get_molecule(atoms)
         # Set unit cell based on Martyna-Tuckerman approach
@@ -34,16 +40,16 @@ def get_non_equivalent_site(
 
         pga = PointGroupAnalyzer(structure)
         eq_sets = pga.get_equivalent_atoms()["eq_sets"]
-        structures = {"supercell": {"atoms": atoms.copy()}}
+        structures["supercell"] = atoms.copy()
         for index, data in eq_sets.items():
             if atoms[index].symbol in element_list:
                 label = f"{atoms[index].symbol}_{index}"
                 marked_atoms = atoms.copy()
                 marked_atoms[index].symbol = marker
-                structures[label] = {
+                structures[label] = marked_atoms
+                parameters[label] = {
                     "symbol": atoms[index].symbol,
                     "indices": list(data),
-                    "atoms": marked_atoms,
                 }
     else:
         # Get the current dimensions of the unit cell
@@ -64,31 +70,34 @@ def get_non_equivalent_site(
             label = f"{site.species_string}_{index}"
             marked_atoms = supercell.copy()
             marked_atoms[index].symbol = marker
-            structures[label] = {
+            structures[label] = marked_atoms
+            parameters[label] = {
                 "symbol": site.species_string,
-                "atoms": marked_atoms,
                 "indices": indices,
             }
 
-    return structures
+    return structures, parameters
 
 
-@task()
+@task(
+    outputs=[{"name": "structures", "identifier": "Namespace"}, {"name": "parameters"}]
+)
 def get_marked_atoms(atoms: Atoms = None, atoms_list: list = None, marker: str = "X"):
     """Get the marked atoms for each atom."""
     structures = {"ground": {"atoms": atoms.copy()}}
+    parameters = {}
     for data in atoms_list:
-        index, orbital = data
+        index = data
         symbol = atoms[index].symbol
-        label = f"{symbol}_{orbital}_{index}"
+        label = f"{symbol}_{index}"
         marked_atoms = atoms.copy()
         marked_atoms[index].symbol = marker
-        structures[label] = {
+        structures[label] = marked_atoms
+        parameters[label] = {
             "indices": {index},
-            "atoms": marked_atoms,
         }
 
-    return structures
+    return structures, parameters
 
 
 @task()
