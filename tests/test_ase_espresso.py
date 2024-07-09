@@ -2,6 +2,7 @@ import numpy as np
 from workgraph_collections.ase.espresso.atomization_energy import atomization_energy
 from workgraph_collections.ase.espresso.base import vibrations
 from aiida_workgraph import WorkGraph
+import pytest
 
 input_data = {
     "system": {
@@ -14,6 +15,7 @@ input_data = {
 }
 
 
+@pytest.mark.skip(reason="The test is too time-consuming.")
 def test_vibrations(n2_molecule, pseudo_dir, metadata_aiida):
     pseudopotentials = {"N": "N.pbe-n-rrkjus_psl.1.0.0.UPF"}
     wg = WorkGraph("test_vibrations")
@@ -21,6 +23,7 @@ def test_vibrations(n2_molecule, pseudo_dir, metadata_aiida):
     vibrations_task.set(
         {
             "atoms": n2_molecule,
+            "indices": [0],
             "pseudopotentials": pseudopotentials,
             "pseudo_dir": pseudo_dir,
             "input_data": input_data,

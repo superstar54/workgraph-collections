@@ -32,10 +32,46 @@ jobs:
 
     test:
 
-        runs-on: aiidalab/aiidalab-qe:latest
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                python-version: ['3.11']
+                aiida-core-version: ['2.5', '2.6']
+
+        services:
+            postgres:
+                image: postgres:12
+                env:
+                    POSTGRES_HOST: 127.0.0.1
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: postgres
+                ports:
+                -   5432:5432
+            rabbitmq:
+                image: rabbitmq:latest
+                ports:
+                -   5672:5672
 
         steps:
         -   uses: actions/checkout@v2
+
+        -   name: Cache Python dependencies
+            uses: actions/cache@v1
+            with:
+                path: ~/.cache/pip
+                key: pip-${{ matrix.python-version }}-tests-${{ hashFiles('**/setup.json') }}
+                restore-keys:
+                    pip-${{ matrix.python-version }}-tests
+
+        -   name: Set up Python ${{ matrix.python-version }}
+            uses: actions/setup-python@v2
+            with:
+                python-version: ${{ matrix.python-version }}
+
+        -   name: Install aiida-core
+            run: pip install aiida-core==${{ matrix.aiida-core-version }}
 
         -   name: Install system dependencies
             run: sudo apt update && sudo apt install --no-install-recommends libfftw3-dev quantum-espresso
@@ -43,14 +79,42 @@ jobs:
         -   name: Install Python dependencies
             run: |
                 pip install -e .[pre-commit,tests]
+                playwright install
                 pip list
+        -   name: Create AiiDA profile
+            run: verdi setup -n --config .github/config/profile.yaml
+
+        -   name: Setup localhost
+            run: verdi computer setup -n --config .github/config/localhost-setup.yaml
+
+        -   name: Configure localhost
+            run: verdi computer configure core.local localhost -n --config .github/config/localhost-config.yaml
+
+        -   name: Setup codes
+            run: |
+                verdi code create core.code.installed -n --config .github/config/code-add.yaml --filepath-executable $(which bash)
+                verdi code create core.code.installed -n --config .github/config/code-python.yaml --filepath-executable $(which python)
+        -   name: Setup `pw.x`
+            run: verdi code create core.code.installed -n --config .github/config/code-pw.yaml --filepath-executable $(which pw.x)
+
+        -   name: Setup `dos.x`
+            run: verdi code create core.code.installed -n --config .github/config/code-dos.yaml --filepath-executable $(which dos.x)
+
+        -   name: Setup `projwfc.x`
+            run: verdi code create core.code.installed -n --config .github/config/code-projwfc.yaml --filepath-executable $(which projwfc.x)
+
+        -   name: Setup SSSP
+            run: |
+                aiida-pseudo install sssp -v 1.3 -x PBEsol -p efficiency
+                aiida-pseudo install sssp -v 1.3 -x PBE -p efficiency
+        -   name: Start AiiDA daemon
+            run: verdi daemon start 1
 
         -   name: Run pytest
             env:
                 AIIDA_WARN_v3: 1
             run: |
                 pytest -v tests --cov
-
         -   name: Upload coverage reports to Codecov
             uses: codecov/codecov-action@v4.0.1
             with:
