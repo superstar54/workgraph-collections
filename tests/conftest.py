@@ -1,4 +1,5 @@
 import pytest
+from ase.io import read
 from ase.build import molecule
 from ase import Atoms
 
@@ -39,3 +40,11 @@ def metadata_aiida():
 def pseudo_dir():
     # current file path + espresso_pseudo
     return "/".join(__file__.split("/")[:-1]) + "/espresso_pseudo"
+
+
+@pytest.fixture
+def phenylacetylene():
+    """Phenylacetylene molecule."""
+    path = "/".join(__file__.split("/")[:-1]) + "/datas/Phenylacetylene.xyz"
+    mol = read(path)
+    return mol
