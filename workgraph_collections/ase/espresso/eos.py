@@ -3,7 +3,7 @@ from workgraph_collections.ase.common.eos import generate_scaled_atoms, fit_eos
 from ase import Atoms
 
 
-@task.graph_builder(outputs=[["context.results", "scf_results"]])
+@task.graph_builder(outputs=[{"name": "scf_results", "from": "context.results"}])
 def all_scf(scaled_atoms, scf_inputs):
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
@@ -20,7 +20,7 @@ def all_scf(scaled_atoms, scf_inputs):
     return wg
 
 
-@task.graph_builder(outputs=[["fit_eos.result", "result"]])
+@task.graph_builder(outputs=[{"name": "result", "from": "fit_eos.result"}])
 def eos_workgraph(
     atoms: Atoms = None,
     command: str = "pw.x",

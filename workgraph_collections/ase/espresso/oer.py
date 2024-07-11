@@ -71,7 +71,7 @@ def build_adsorbate(atoms, site, site_symbol, site_position, mols):
     return structures
 
 
-@task.graph_builder(outputs=[["context.results", "scf_results"]])
+@task.graph_builder(outputs=[{"name": "scf_results", "from": "context.results"}])
 def relax_structures(structures, pw_inputs):
     """Run the scf calculation for each atoms."""
     from workgraph_collections.ase.espresso.base import pw_calculator

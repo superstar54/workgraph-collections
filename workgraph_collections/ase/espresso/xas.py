@@ -91,7 +91,7 @@ def run_all_xspectra_prod(
     return wg
 
 
-@task.graph_builder(outputs=[["binding_energy.result", "result"]])
+@task.graph_builder(outputs=[{"name": "result", "from": "binding_energy.result"}])
 def xas_workgraph(
     atoms: Atoms = None,
     commands: dict = None,
