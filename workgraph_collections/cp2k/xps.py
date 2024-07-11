@@ -61,7 +61,7 @@ def run_scf(
             "structure": supercell,
         }
     )
-    scf_ground.to_context = [["output_parameters", "scf.ground"]]
+    scf_ground.set_context({"output_parameters": "scf.ground"})
     marked_structures = marked_structures["marked_structures"]
     # excited state node
     for key, marked_structure in marked_structures.items():
@@ -86,7 +86,7 @@ def run_scf(
                 "structure": marked_structure,
             }
         )
-        scf_ch.to_context = [["output_parameters", f"scf.{key}"]]
+        scf_ch.set_context({"output_parameters": f"scf.{key}"})
     return wg
 
 

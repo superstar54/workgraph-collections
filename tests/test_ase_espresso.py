@@ -35,7 +35,6 @@ def test_vibrations(n2_molecule, pseudo_dir, metadata_aiida):
 
 
 def test_atomization_energy(n_atom, n2_molecule, pseudo_dir, metadata_aiida):
-    import os
 
     pseudopotentials = {"N": "N.pbe-n-rrkjus_psl.1.0.0.UPF"}
     # ------------------------- Set the inputs -------------------------
@@ -64,10 +63,35 @@ def test_atomization_energy(n_atom, n2_molecule, pseudo_dir, metadata_aiida):
         {"molecule": n2_molecule, "computer": "localhost"}
     )
     wg.submit(wait=True, timeout=200)
-    os.system("verdi process report {}".format(wg.tasks["scf_mol"].pk))
-    os.system("verdi calcjob remotecat {} CRASH".format(wg.tasks["scf_mol"].pk))
 
     assert np.isclose(
         wg.tasks["calc_atomization_energy"].outputs["result"].value.value,
         16.24625509874,
+    )
+
+
+def test_eos(bulk_si, pseudo_dir, metadata_aiida):
+    from workgraph_collections.ase.espresso.eos import eos_workgraph
+
+    pseudopotentials = {"Si": "Si.pbe-nl-rrkjus_psl.1.0.0.UPF"}
+    # ------------------------- Set the inputs -------------------------
+    wg = eos_workgraph(
+        atoms=bulk_si,
+        computer="localhost",
+        scales=[0.95, 1.0, 1.05],
+        command="mpirun -np 2 pw.x",
+        pseudopotentials=pseudopotentials,
+        pseudo_dir=pseudo_dir,
+        input_data=input_data,
+        kpts=(4, 4, 4),
+        metadata=metadata_aiida,
+    )
+    # ------------------------- Submit the calculation -------------------
+    # wg.run()
+    wg.submit(wait=True, timeout=200)
+
+    assert np.isclose(
+        wg.tasks["fit_eos"].outputs["result"].value.get_dict()["B"],
+        88.8909406,
+        atol=1e-1,
     )
