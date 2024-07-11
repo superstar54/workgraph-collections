@@ -9,7 +9,7 @@ from ase import Atoms
 from copy import deepcopy
 
 
-@task.graph_builder(outputs=[["context.scf", "results"]])
+@task.graph_builder(outputs=[{"name": "results", "from": "context.scf"}])
 def run_scf(
     marked_atoms: dict,
     command: str = None,
@@ -108,7 +108,7 @@ def run_scf(
     return wg
 
 
-@task.graph_builder(outputs=[["binding_energy.result", "result"]])
+@task.graph_builder(outputs=[{"name": "result", "from": "binding_energy.result"}])
 def xps_workgraph(
     atoms: Atoms = None,
     atoms_list: list = None,

@@ -4,7 +4,7 @@ from workgraph_collections.common.eos import scale_structure, fit_eos
 
 
 # Output result from context to the output socket
-@task.graph_builder(outputs=[["context.result", "result"]])
+@task.graph_builder(outputs=[{"name": "result", "from": "context.result"}])
 def all_scf(structures, scf_inputs):
     """Run the scf calculation for each structure."""
     from aiida_workgraph import WorkGraph
@@ -19,7 +19,7 @@ def all_scf(structures, scf_inputs):
     return wg
 
 
-@task.graph_builder(outputs=[["fit_eos.result", "result"]])
+@task.graph_builder(outputs=[{"name": "result", "from": "fit_eos.result"}])
 def eos_workgraph(
     structure: orm.StructureData = None,
     code: orm.Code = None,

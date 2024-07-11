@@ -4,7 +4,7 @@ from aiida import orm
 from aiida_workgraph import WorkGraph, task
 
 
-@task.graph_builder(outputs=[["bader.charge", "charge"]])
+@task.graph_builder(outputs=[{"name": "charge", "from": "bader.charge"}])
 def bader_workgraph(
     structure: orm.StructureData = None,
     pw_code: orm.Code = None,
