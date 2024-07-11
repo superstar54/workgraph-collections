@@ -64,7 +64,7 @@ def run_scf(
             "structure": supercell,
         }
     )
-    pw_ground.to_context = [["output_parameters", "scf.ground"]]
+    pw_ground.set_context({"output_parameters": "scf.ground"})
     # remove unwanted data
     marked_structures = marked_structures["marked_structures"]
     # excited state node
@@ -120,7 +120,7 @@ def run_scf(
                 "settings": settings,
             }
         )
-        pw_excited.to_context = [["output_parameters", f"scf.{key}"]]
+        pw_excited.set_context({"output_parameters": f"scf.{key}"})
     return wg
 
 

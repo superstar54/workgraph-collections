@@ -47,7 +47,7 @@ def run_scf(
             "pseudo_dir": pseudo_dir,
         }
     )
-    scf_ground.to_context = [["results", "scf.ground"]]
+    scf_ground.set_context({"results": "scf.ground"})
     # becareful, we generate new data here, thus break the data provenance!
     # that's why I put the marked atoms in the context, so that we can link them
     for key, atoms in marked_atoms.items():
@@ -104,7 +104,7 @@ def run_scf(
             }
         )
         # save the output parameters to the context
-        scf.to_context = [["results", f"scf.{key}"]]
+        scf.set_context({"results": f"scf.{key}"})
     return wg
 
 

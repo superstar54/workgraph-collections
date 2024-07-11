@@ -46,7 +46,7 @@ def run_relaxation(
         )
         relax.set(relax_inputs)
         # save the output parameters to the context
-        relax.to_context = [["results", f"results.{i}"]]
+        relax.set_context({"results": f"results.{i}"})
     return wg
 
 

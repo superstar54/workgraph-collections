@@ -15,7 +15,7 @@ def all_scf(structures, scf_inputs):
         scf = wg.tasks.new(PwCalculation, name=f"scf_{key}", structure=structure)
         scf.set(scf_inputs)
         # save the output parameters to the context
-        scf.to_context = [["output_parameters", f"result.{key}"]]
+        scf.set_context({"output_parameters": f"result.{key}"})
     return wg
 
 

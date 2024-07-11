@@ -94,7 +94,7 @@ def relax_workgraph(
     relax_task = tree.nodes.new(PwBaseWorkChain, name="relax")
     inputs["pw.structure"] = "{{current_structure}}"
     relax_task.set(inputs)
-    relax_task.to_context = [["output_structure", "current_structure"]]
+    relax_task.set_context({"output_structure": "current_structure"})
     tree.links.new(
         prepare_relax_inputs_task.outputs[0], relax_task.inputs["pw.parameters"]
     )
