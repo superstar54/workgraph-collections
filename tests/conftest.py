@@ -1,6 +1,6 @@
 import pytest
 from ase.io import read
-from ase.build import molecule
+from ase.build import molecule, bulk
 from ase import Atoms
 
 from aiida import load_profile
@@ -20,6 +20,12 @@ def n2_molecule():
     n2_molecule = molecule("N2", pbc=True)
     n2_molecule.center(vacuum=5.0)
     return n2_molecule
+
+
+@pytest.fixture
+def bulk_si():
+    bulk_si = bulk("Si")
+    return bulk_si
 
 
 @pytest.fixture
