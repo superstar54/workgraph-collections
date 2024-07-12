@@ -2,7 +2,7 @@ from aiida_workgraph import task
 from ase import Atoms
 
 
-@task(outputs=[{"identifier": "General", "name": "results"}])
+@task(outputs=[{"name": "results"}])
 def emt_calculator(atoms: Atoms) -> float:
     from ase.calculators.emt import EMT
 

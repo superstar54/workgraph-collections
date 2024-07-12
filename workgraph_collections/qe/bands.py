@@ -13,8 +13,8 @@ from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis im
 SeekpathTask = build_task(
     seekpath_structure_analysis,
     outputs=[
-        {"identifier": "General", "name": "primitive_structure"},
-        {"identifier": "General", "name": "explicit_kpoints"},
+        {"name": "primitive_structure"},
+        {"name": "explicit_kpoints"},
     ],
 )
 
