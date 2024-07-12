@@ -4,8 +4,8 @@ from ase import Atoms
 
 @task(
     outputs=[
-        {"identifier": "Any", "name": "atoms"},
-        {"identifier": "Any", "name": "results"},
+        {"name": "atoms"},
+        {"name": "results"},
     ]
 )
 def pw_calculator(
@@ -58,7 +58,7 @@ def pw_calculator(
     return {"atoms": atoms, "results": results}
 
 
-@task(outputs=[{"identifier": "Any", "name": "results"}])
+@task(outputs=[{"name": "results"}])
 def dos_calculator(
     command: str = "dos.x",
     input_data: dict = None,
@@ -78,7 +78,7 @@ def dos_calculator(
     return {"results": results}
 
 
-@task(outputs=[{"identifier": "Any", "name": "results"}])
+@task(outputs=[{"name": "results"}])
 def projwfc_calculator(
     command: str = "projwfc.x",
     input_data: dict = None,
@@ -99,7 +99,7 @@ def projwfc_calculator(
     return {"results": results}
 
 
-@task(outputs=[{"identifier": "Any", "name": "results"}])
+@task(outputs=[{"name": "results"}])
 def pp_calculator(
     command: str = "pp.x",
     input_data: dict = None,
@@ -120,7 +120,7 @@ def pp_calculator(
     return {"results": results}
 
 
-@task(outputs=[{"identifier": "Any", "name": "results"}])
+@task(outputs=[{"name": "results"}])
 def xspectra_calculator(
     command: str = "xspectra.x",
     input_data: dict = None,
