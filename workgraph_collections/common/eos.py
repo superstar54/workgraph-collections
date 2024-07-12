@@ -5,8 +5,8 @@ from aiida import orm
 # explicitly define the output socket name to match the return value of the function
 @task.calcfunction(
     outputs=[
-        {"identifier": "General", "name": "structures"},
-        {"identifier": "General", "name": "volumes"},
+        {"identifier": "Any", "name": "structures"},
+        {"identifier": "Any", "name": "volumes"},
     ]
 )
 def scale_structure(structure: orm.StructureData, scales: list):

@@ -4,8 +4,8 @@ from ase import Atoms
 
 @task(
     outputs=[
-        {"identifier": "General", "name": "atoms"},
-        {"identifier": "General", "name": "results"},
+        {"identifier": "Any", "name": "atoms"},
+        {"identifier": "Any", "name": "results"},
     ]
 )
 def gpaw_calculator(

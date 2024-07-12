@@ -12,15 +12,15 @@ from aiida_quantumespresso.workflows.functions.get_marked_structures import (
 GetXspectraStructureTask = build_task(
     get_xspectra_structures,
     outputs=[
-        {"identifier": "General", "name": "output_parameters"},
-        {"identifier": "General", "name": "marked_structures"},
+        {"identifier": "Any", "name": "output_parameters"},
+        {"identifier": "Any", "name": "marked_structures"},
     ],
 )
 GetMarkedStructuresTask = build_task(
     get_marked_structures,
     outputs=[
-        {"identifier": "General", "name": "output_parameters"},
-        {"identifier": "General", "name": "marked_structures"},
+        {"identifier": "Any", "name": "output_parameters"},
+        {"identifier": "Any", "name": "marked_structures"},
     ],
 )
 
