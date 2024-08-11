@@ -4,7 +4,7 @@ from ase import Atoms
 
 @task(
     outputs=[
-        {"name": "scaled_atoms", "identifier": "Namespace"},
+        {"name": "scaled_atoms", "identifier": "workgraph.namespace"},
         {"name": "volumes"},
     ]
 )

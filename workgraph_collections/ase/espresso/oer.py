@@ -7,7 +7,7 @@ molecule_energies = {
 }
 
 
-@task(outputs=[{"name": "structures", "identifier": "Namespace"}])
+@task(outputs=[{"name": "structures", "identifier": "workgraph.namespace"}])
 def build_adsorbate(atoms, site, site_symbol, site_position, mols):
     """
     Add O*, OH* and OOH*, and relax the structure

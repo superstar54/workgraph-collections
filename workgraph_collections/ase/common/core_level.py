@@ -3,7 +3,10 @@ from ase import Atoms
 
 
 @task(
-    outputs=[{"name": "structures", "identifier": "Namespace"}, {"name": "parameters"}]
+    outputs=[
+        {"name": "structures", "identifier": "workgraph.namespace"},
+        {"name": "parameters"},
+    ]
 )
 def get_non_equivalent_site(
     atoms: Atoms = None,
@@ -80,7 +83,10 @@ def get_non_equivalent_site(
 
 
 @task(
-    outputs=[{"name": "structures", "identifier": "Namespace"}, {"name": "parameters"}]
+    outputs=[
+        {"name": "structures", "identifier": "workgraph.namespace"},
+        {"name": "parameters"},
+    ]
 )
 def get_marked_atoms(atoms: Atoms = None, atoms_list: list = None, marker: str = "X"):
     """Get the marked atoms for each atom."""
