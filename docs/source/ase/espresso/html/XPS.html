@@ -21,6 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/rete-react-plugin@2.0.5/rete-react-plugin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/rete-auto-arrange-plugin@2.0.1/rete-auto-arrange-plugin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/rete-minimap-plugin@2.0.1/rete-minimap-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-scopes-plugin@2.1.0/rete-scopes-plugin.min.js"></script>
 
     <style>
         .App {
@@ -52,6 +53,7 @@
         const { createRoot } = ReactDOM;
         const { NodeEditor, ClassicPreset } = Rete;
         const { AreaPlugin, AreaExtensions } = ReteAreaPlugin;
+        const { ScopesPlugin, Presets: ScopesPresets } = ReteScopesPlugin;
         const { ConnectionPlugin, Presets: ConnectionPresets } = ReteConnectionPlugin;
         const { ReactPlugin, Presets } = ReteReactPlugin;
         const { AutoArrangePlugin, Presets: ArrangePresets, ArrangeAppliers} = ReteAutoArrangePlugin;
@@ -59,7 +61,7 @@
         const { RenderUtils } = ReteRenderUtils;
         const styled = window.styled;
 
-        const workgraphData = {"name": "XPS", "uuid": "98d85dac-3b7b-11ef-ab0d-906584de3e5b", "state": "CREATED", "nodes": {"marked_atoms": {"label": "marked_atoms", "inputs": [], "outputs": [{"name": "result"}], "position": [30, 30]}, "run_scf": {"label": "run_scf", "inputs": [{"name": "marked_atoms", "identifier": "General", "uuid": "98de1724-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98ddfa0a-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "marked_atoms", "from_socket": "result", "from_socket_uuid": "98db6362-3b7b-11ef-ab0d-906584de3e5b"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "marked_atoms"}], "outputs": [{"name": "results"}], "position": [60, 60]}, "binding_energy": {"label": "binding_energy", "inputs": [{"name": "scf_outputs"}], "outputs": [], "position": [90, 90]}}, "links": [{"from_socket": "result", "from_node": "marked_atoms", "from_socket_uuid": "98db6362-3b7b-11ef-ab0d-906584de3e5b", "to_socket": "marked_atoms", "to_node": "run_scf", "state": false}, {"from_socket": "results", "from_node": "run_scf", "from_socket_uuid": "98de1e86-3b7b-11ef-ab0d-906584de3e5b", "to_socket": "scf_outputs", "to_node": "binding_energy", "state": false}]}
+        const workgraphData = {"name": "XPS", "uuid": "0c66f07e-6b8a-11ef-8aff-58112291ee1a", "state": "CREATED", "nodes": {"marked_atoms": {"label": "marked_atoms", "node_type": "PYTHONJOB", "inputs": [], "outputs": [{"name": "structures"}], "position": [30, 30], "children": []}, "run_scf": {"label": "run_scf", "node_type": "GRAPH_BUILDER", "inputs": [{"name": "marked_atoms", "identifier": "node_graph.any", "uuid": "0c85dbc4-6b8a-11ef-8aff-58112291ee1a", "node_uuid": "0c85d6ec-6b8a-11ef-8aff-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [{"from_node": "marked_atoms", "from_socket": "structures", "from_socket_uuid": "0c7452aa-6b8a-11ef-8aff-58112291ee1a"}], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "marked_atoms"}], "outputs": [{"name": "results"}], "position": [60, 60], "children": []}, "binding_energy": {"label": "binding_energy", "node_type": "PYTHONJOB", "inputs": [{"name": "scf_outputs"}], "outputs": [], "position": [90, 90], "children": []}}, "links": [{"from_socket": "structures", "from_node": "marked_atoms", "from_socket_uuid": "0c7452aa-6b8a-11ef-8aff-58112291ee1a", "to_socket": "marked_atoms", "to_node": "run_scf", "state": false}, {"from_socket": "results", "from_node": "run_scf", "from_socket_uuid": "0c85e3e4-6b8a-11ef-8aff-58112291ee1a", "to_socket": "scf_outputs", "to_node": "binding_energy", "state": false}]}
 
         // Define Schemes to use in vanilla JS
         const Schemes = {
@@ -141,6 +143,23 @@
           workgraphData.links.forEach(async (link) => { // Specify the type of link here
             await addLink(editor, area, layout, link);
           });
+
+          // Add while zones
+          console.log("Adding while zone: ");
+          for (const nodeId in workgraphData.nodes) {
+            const nodeData = workgraphData.nodes[nodeId];
+            const node_type = nodeData['node_type'];
+            if (node_type === "WHILE" || node_type === "IF" || node_type === "ZONE") {
+              // find the node
+              const node = editor.nodeMap[nodeData.label];
+              const children = nodeData['children'];
+              // find the id of all nodes in the editor that has a label in while_zone
+              for (const nodeId in children) {
+                const node1 = editor.nodeMap[children[nodeId]];
+                node1.parent = node.id;
+              }
+            }
+          }
         }
 
         async function createEditor(container) {
@@ -150,6 +169,7 @@
             const area = new AreaPlugin(container);
             const connection = new ConnectionPlugin();
             const render = new ReactPlugin({ createRoot });
+            const scopes = new ScopesPlugin();
             const arrange = new AutoArrangePlugin();
 
             const minimap = new MinimapPlugin({
@@ -164,6 +184,7 @@
             render.addPreset(Presets.minimap.setup({ size: 200 }));
 
             connection.addPreset(ConnectionPresets.classic.setup());
+            scopes.addPreset(ScopesPresets.classic.setup());
 
             const applier = new ArrangeAppliers.TransitionApplier({
               duration: 500,
@@ -179,11 +200,9 @@
             editor.use(area);
             // area.use(connection);
             area.use(render);
+            area.use(scopes);
             area.use(arrange);
             area.use(minimap);
-
-
-            AreaExtensions.simpleNodesOrder(area);
 
             async function layout(animate) {
               await arrange.layout({ applier: animate ? applier : undefined });
@@ -223,6 +242,7 @@
                           // aplly layout twice to ensure all nodes are arranged
                           editor?.layout(false).then(() => editor?.layout(true));
                         });
+                        window.editor = editor;
                     });
                 }
                 if (document.getElementById('fullscreen-btn')) {
