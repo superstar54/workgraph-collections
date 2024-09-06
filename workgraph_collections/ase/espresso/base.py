@@ -196,3 +196,33 @@ def vibrations(
     vib.write_dos()
     energies = vib.get_energies()
     return {"energies": energies}
+
+
+@task(outputs=[{"name": "results"}])
+def ld1_calculator(
+    command: str = "ld1.x",
+    input_data: dict = None,
+    pseudo_potential_test_cards: str = None,
+    **kwargs,
+) -> dict:
+    """Run a ld1 calculation."""
+
+    from ase_quantumespresso.ld1 import Ld1Template
+    from ase_quantumespresso.espresso import Espresso, EspressoProfile
+    from ase import Atoms
+
+    # Optionally create profile to override paths in ASE configuration:
+    profile = EspressoProfile(command=command, pseudo_dir=".")
+    input_data["outdir"] = "out"
+
+    calc = Espresso(
+        profile=profile,
+        template=Ld1Template(),
+        input_data=input_data,
+        pseudo_potential_test_cards=pseudo_potential_test_cards,
+        **kwargs,
+    )
+
+    results = calc.get_property("ld1", Atoms())
+    #
+    return results

@@ -49,6 +49,7 @@ pip install git+https://github.com/superstar54/workgraph-collections.git
   - [Bader Charge](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/bader.html)
   - [X-ray photoelectron spectroscopy (XPS)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/xps.html)
   - [X-ray Absorption Near Edge Structure (XANES)](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/xas.html) (Ongoing)
+  - [Generate core-hole pseudopotential](https://workgraph-collections.readthedocs.io/en/latest/ase/espresso/core_hole_pseudo.html)
 
 
 ## GPAW
