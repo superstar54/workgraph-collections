@@ -21,6 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/rete-react-plugin@2.0.5/rete-react-plugin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/rete-auto-arrange-plugin@2.0.1/rete-auto-arrange-plugin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/rete-minimap-plugin@2.0.1/rete-minimap-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-scopes-plugin@2.1.0/rete-scopes-plugin.min.js"></script>
 
     <style>
         .App {
@@ -52,6 +53,7 @@
         const { createRoot } = ReactDOM;
         const { NodeEditor, ClassicPreset } = Rete;
         const { AreaPlugin, AreaExtensions } = ReteAreaPlugin;
+        const { ScopesPlugin, Presets: ScopesPresets } = ReteScopesPlugin;
         const { ConnectionPlugin, Presets: ConnectionPresets } = ReteConnectionPlugin;
         const { ReactPlugin, Presets } = ReteReactPlugin;
         const { AutoArrangePlugin, Presets: ArrangePresets, ArrangeAppliers} = ReteAutoArrangePlugin;
@@ -59,7 +61,7 @@
         const { RenderUtils } = ReteRenderUtils;
         const styled = window.styled;
 
-        const workgraphData = {"name": "xps_workgraph0", "nodes": {"xps_workgraph0": {"version": "node_graph@0.0.1", "uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "name": "xps_workgraph0", "inner_id": 0, "state": "PLANNED", "action": "", "error": "", "metadata": {"node_type": "graph_builder", "catalog": "Others", "identifier": "xps_workgraph", "parent_uuid": "", "platform": "node_graph", "args": [], "kwargs": ["atoms", "atoms_list", "element_list", "scf_inputs", "corrections", "metadata", "run_relax"], "var_args": null, "var_kwargs": null, "group_properties": [], "group_inputs": null, "group_outputs": [["binding_energy.result", "result"]], "hash": "98279ecc-3b7b-11ef-ab0d-906584de3e5b", "pk": null, "is_aiida_component": false}, "inputs": [{"name": "atoms", "identifier": "General", "uuid": "98259104-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "atoms_list", "identifier": "General", "uuid": "9825921c-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "element_list", "identifier": "General", "uuid": "982592a8-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "scf_inputs", "identifier": "String", "uuid": "98259334-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_json"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_json"}}, {"name": "corrections", "identifier": "General", "uuid": "982593d4-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "metadata", "identifier": "General", "uuid": "98259438-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "run_relax", "identifier": "Bool", "uuid": "982594ce-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_json"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_json"}}, {"name": "_wait", "identifier": "General", "uuid": "982595b4-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1000000.0, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "outputs": [{"name": "result", "identifier": "General", "uuid": "9825964a-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "_wait", "identifier": "General", "uuid": "982596b8-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "_outputs", "identifier": "General", "uuid": "9825971c-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "ctrl_inputs": [{"name": "entry", "identifier": "General", "uuid": "9825979e-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1000, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "ctrl", "identifier": "General", "uuid": "982597f8-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "INPUT", "link_limit": 1000, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "ctrl_outputs": [{"name": "exit", "identifier": "General", "uuid": "9825983e-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "ctrl", "identifier": "General", "uuid": "9825987a-3b7b-11ef-ab0d-906584de3e5b", "node_uuid": "98258e02-3b7b-11ef-ab0d-906584de3e5b", "type": "OUTPUT", "link_limit": 1000, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "position": [0, 0], "description": "", "log": "", "hash": "", "to_context": [], "wait": [], "label": "xps_workgraph"}}, "links": []}
+        const workgraphData = {"name": "xps_workgraph0", "nodes": {"xps_workgraph0": {"version": "node_graph@0.0.1", "uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "name": "xps_workgraph0", "inner_id": 0, "state": "PLANNED", "action": "", "error": "", "metadata": {"node_type": "graph_builder", "catalog": "Others", "identifier": "xps_workgraph", "parent_uuid": "", "platform": "node_graph", "args": [], "kwargs": ["atoms", "scf_inputs", "marked_structures_inputs", "core_hole_pseudos", "metadata", "run_relax"], "var_args": null, "var_kwargs": null, "group_properties": [], "group_inputs": null, "group_outputs": [{"name": "result", "from": "binding_energy.result"}], "hash": "72b8c424-6c25-11ef-a12e-58112291ee1a", "pk": null, "is_aiida_component": false}, "inputs": [{"name": "atoms", "identifier": "node_graph.any", "uuid": "72abe31c-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "scf_inputs", "identifier": "node_graph.string", "uuid": "72abe484-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_json"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_json"}}, {"name": "marked_structures_inputs", "identifier": "node_graph.any", "uuid": "72abe54c-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "core_hole_pseudos", "identifier": "node_graph.any", "uuid": "72abe5d8-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "metadata", "identifier": "node_graph.any", "uuid": "72abe664-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "run_relax", "identifier": "node_graph.bool", "uuid": "72abe6f0-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_json"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_json"}}, {"name": "_wait", "identifier": "workgraph.any", "uuid": "72abe7ea-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1000000.0, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "outputs": [{"name": "result", "identifier": "workgraph.any", "uuid": "72abe8d0-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "_wait", "identifier": "workgraph.any", "uuid": "72abe95c-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "_outputs", "identifier": "workgraph.any", "uuid": "72abe9ca-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "ctrl_inputs": [{"name": "entry", "identifier": "node_graph.any", "uuid": "72abea7e-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1000, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "ctrl", "identifier": "node_graph.any", "uuid": "72abeaf6-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "INPUT", "link_limit": 1000, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "ctrl_outputs": [{"name": "exit", "identifier": "node_graph.any", "uuid": "72abeb50-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "OUTPUT", "link_limit": 1, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}, {"name": "ctrl", "identifier": "node_graph.any", "uuid": "72abec54-6c25-11ef-a12e-58112291ee1a", "node_uuid": "72abde76-6c25-11ef-a12e-58112291ee1a", "type": "OUTPUT", "link_limit": 1000, "links": [], "serialize": {"path": "node_graph.serializer", "name": "serialize_pickle"}, "deserialize": {"path": "node_graph.serializer", "name": "deserialize_pickle"}}], "position": [0, 0], "description": "", "log": "", "hash": "", "context_mapping": {}, "wait": [], "children": [], "execution_count": 0, "parent_task": [null], "label": "xps_workgraph"}}, "links": []}
 
         // Define Schemes to use in vanilla JS
         const Schemes = {
@@ -141,6 +143,23 @@
           workgraphData.links.forEach(async (link) => { // Specify the type of link here
             await addLink(editor, area, layout, link);
           });
+
+          // Add while zones
+          console.log("Adding while zone: ");
+          for (const nodeId in workgraphData.nodes) {
+            const nodeData = workgraphData.nodes[nodeId];
+            const node_type = nodeData['node_type'];
+            if (node_type === "WHILE" || node_type === "IF" || node_type === "ZONE") {
+              // find the node
+              const node = editor.nodeMap[nodeData.label];
+              const children = nodeData['children'];
+              // find the id of all nodes in the editor that has a label in while_zone
+              for (const nodeId in children) {
+                const node1 = editor.nodeMap[children[nodeId]];
+                node1.parent = node.id;
+              }
+            }
+          }
         }
 
         async function createEditor(container) {
@@ -150,6 +169,7 @@
             const area = new AreaPlugin(container);
             const connection = new ConnectionPlugin();
             const render = new ReactPlugin({ createRoot });
+            const scopes = new ScopesPlugin();
             const arrange = new AutoArrangePlugin();
 
             const minimap = new MinimapPlugin({
@@ -164,6 +184,7 @@
             render.addPreset(Presets.minimap.setup({ size: 200 }));
 
             connection.addPreset(ConnectionPresets.classic.setup());
+            scopes.addPreset(ScopesPresets.classic.setup());
 
             const applier = new ArrangeAppliers.TransitionApplier({
               duration: 500,
@@ -179,11 +200,9 @@
             editor.use(area);
             // area.use(connection);
             area.use(render);
+            area.use(scopes);
             area.use(arrange);
             area.use(minimap);
-
-
-            AreaExtensions.simpleNodesOrder(area);
 
             async function layout(animate) {
               await arrange.layout({ applier: animate ? applier : undefined });
@@ -223,6 +242,7 @@
                           // aplly layout twice to ensure all nodes are arranged
                           editor?.layout(false).then(() => editor?.layout(true));
                         });
+                        window.editor = editor;
                     });
                 }
                 if (document.getElementById('fullscreen-btn')) {

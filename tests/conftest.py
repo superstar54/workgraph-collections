@@ -2,6 +2,7 @@ import pytest
 from ase.io import read
 from ase.build import molecule, bulk
 from ase import Atoms
+from pathlib import Path
 
 from aiida import load_profile
 
@@ -51,6 +52,6 @@ def pseudo_dir():
 @pytest.fixture
 def phenylacetylene():
     """Phenylacetylene molecule."""
-    path = "/".join(__file__.split("/")[:-1]) + "/datas/Phenylacetylene.xyz"
+    path = Path(__file__).parent / "datas/Phenylacetylene.xyz"
     mol = read(path)
     return mol

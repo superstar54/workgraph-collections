@@ -1,8 +1,7 @@
 from aiida_workgraph import task, WorkGraph
 from workgraph_collections.ase.common.core_level import (
-    get_marked_atoms,
-    get_non_equivalent_site,
-    binding_energy,
+    get_marked_structures,
+    get_binding_energy,
 )
 from workgraph_collections.ase.espresso.base import pw_calculator
 from ase import Atoms
@@ -19,7 +18,7 @@ def run_scf(
     pseudopotentials: dict = None,
     pseudo_dir: str = None,
     core_hole_pseudos: dict = None,
-    core_hole_treatment: str = "xch",
+    core_hole_treatment: str = "XCH_SMEAR",
     is_molecule: bool = None,
     metadata: dict = None,
 ) -> WorkGraph:
@@ -28,16 +27,18 @@ def run_scf(
     from .base import pw_calculator
 
     wg = WorkGraph("XPS")
-    wg.context = {"marked_atoms": marked_atoms}
-    marked_atoms = marked_atoms.value
+    # run the ground state calculation for the supercell
     scf_ground = wg.tasks.new(
         "PythonJob",
         function=pw_calculator,
         name="ground",
-        atoms=marked_atoms.pop("ground"),
+        atoms=marked_atoms.pop("supercell"),
         computer=computer,
         metadata=metadata,
     )
+    # update pseudopotentials using ground state pseudopotentials
+    for key, value in core_hole_pseudos.items():
+        pseudopotentials[key] = value["ground"]
     scf_ground.set(
         {
             "command": command,
@@ -48,8 +49,8 @@ def run_scf(
         }
     )
     scf_ground.set_context({"results": "scf.ground"})
-    # becareful, we generate new data here, thus break the data provenance!
-    # that's why I put the marked atoms in the context, so that we can link them
+    # remove the original atoms
+    marked_atoms.pop("original", None)
     for key, atoms in marked_atoms.items():
         scf = wg.tasks.new(
             "PythonJob",
@@ -61,12 +62,12 @@ def run_scf(
         )
         # update pseudopotentials based on marked atoms
         # split key by last underscore
-        print("key: ", key)
         label, _index = key.rsplit("_", 1)
-        pseudopotentials["X"] = core_hole_pseudos[label]
+        pseudopotentials["X"] = core_hole_pseudos[label]["core_hole"]
         # update the input data based on the core hole treatment
         input_data.setdefault("SYSTEM", {})
         if is_molecule:
+            print("is_molecule: ", is_molecule)
             input_data["SYSTEM"]["assume_isolated"] = "mt"
             kpts = None  # set gamma only
             core_hole_treatment = "FULL"
@@ -111,10 +112,9 @@ def run_scf(
 @task.graph_builder(outputs=[{"name": "result", "from": "binding_energy.result"}])
 def xps_workgraph(
     atoms: Atoms = None,
-    atoms_list: list = None,
-    element_list: list = None,
     scf_inputs: str = None,
-    corrections: dict = None,
+    marked_structures_inputs: dict = None,
+    core_hole_pseudos: dict = None,
     metadata: dict = None,
     run_relax: bool = False,
 ):
@@ -127,6 +127,7 @@ def xps_workgraph(
     from ase.io.espresso import Namelist
 
     scf_inputs = scf_inputs or {}
+    marked_structures_inputs = marked_structures_inputs or {}
 
     wg = WorkGraph("XPS")
     # -------- relax -----------
@@ -143,38 +144,30 @@ def xps_workgraph(
         relax_inputs["input_data"] = input_data
         relax_task.set(relax_inputs)
         atoms = relax_task.outputs["atoms"]
-    # -------- marked_atoms -----------
-    if atoms_list:
-        marked_atoms_task = wg.tasks.new(
-            "PythonJob",
-            function=get_marked_atoms,
-            name="marked_atoms",
-            atoms=atoms,
-            atoms_list=atoms_list,
-            metadata=metadata,
-        )
-    elif element_list:
-        marked_atoms_task = wg.tasks.new(
-            "PythonJob",
-            function=get_non_equivalent_site,
-            name="marked_atoms",
-            atoms=atoms,
-            element_list=element_list,
-            metadata=metadata,
-        )
-    else:
-        raise "Either atoms_list or element_list should be provided."
+    # -------- get_marked_atoms -----------
+    marked_atoms_task = wg.tasks.new(
+        "PythonJob",
+        function=get_marked_structures,
+        name="marked_atoms",
+        atoms=atoms,
+        metadata=metadata,
+    )
+    marked_atoms_task.set(marked_structures_inputs)
+    # ------------------ run scf -------------------
     run_scf_task = wg.tasks.new(
         run_scf,
         name="run_scf",
-        marked_atoms=marked_atoms_task.outputs["result"],
+        marked_atoms=marked_atoms_task.outputs["structures"],
+        core_hole_pseudos=core_hole_pseudos,
+        is_molecule=marked_structures_inputs.get("is_molecule", False),
     )
     run_scf_task.set(scf_inputs)
+    # -------- calculate binding energy -----------
     wg.tasks.new(
         "PythonJob",
-        function=binding_energy,
-        name="binding_energy",
-        corrections=corrections,
+        function=get_binding_energy,
+        name="get_binding_energy",
+        core_hole_pseudos=core_hole_pseudos,
         scf_outputs=run_scf_task.outputs["results"],
         metadata=metadata,
     )
