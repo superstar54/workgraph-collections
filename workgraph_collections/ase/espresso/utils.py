@@ -17,7 +17,7 @@ def parse_pp_inputfile(xml_string):
 
     # Split the section into lines and parse
     lines = pp_inputfile_content.split("\n")
-    config_data = {}
+    input_data = {}
     current_section = None
     pseudo_potential_test_cards = ""
 
@@ -28,7 +28,7 @@ def parse_pp_inputfile(xml_string):
             current_section = line[1:].split()[
                 0
             ]  # Removes '&' and splits to get the section name
-            config_data[current_section] = {}
+            input_data[current_section] = {}
         elif line.startswith("/"):
             # End of a section
             current_section = None
@@ -41,7 +41,7 @@ def parse_pp_inputfile(xml_string):
                     key, value = key_value_pair[0].strip(), key_value_pair[
                         1
                     ].strip().strip("'")
-                    config_data[current_section][key] = value
+                    input_data[current_section][key] = value
         elif line.isdigit():
             # Start recording pseudo potential cards
             pseudo_potential_test_cards += line + "\n"
@@ -50,6 +50,6 @@ def parse_pp_inputfile(xml_string):
             pseudo_potential_test_cards += line + "\n"
 
     return {
-        "config_data": config_data,
+        "input_data": input_data,
         "pseudo_potential_test_cards": pseudo_potential_test_cards.strip(),
     }

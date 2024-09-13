@@ -27,7 +27,7 @@ requires-python = ">=3.9"
 dependencies = [
     "aiida-workgraph>=0.3.16",
     "ase>=3.23.0",
-    "ase-quantumespresso",
+    "ase-quantumespresso @ git+https://github.com/superstar54/ase-quantumespresso.git",
     "aiida-quantumespresso",
     "aiida-cp2k",
     "aiida-bader",
