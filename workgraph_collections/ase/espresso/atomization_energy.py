@@ -14,7 +14,7 @@ def calc_atomization_energy(molecule, molecule_output, atom_output):
 def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
     """Workgraph for atomization energy calculation using Espresso calculator."""
 
-    from .base import pw_calculator
+    from .pw import pw_calculator
 
     wg = WorkGraph("Atomization energy")
     pw_atom = wg.tasks.new(
@@ -29,7 +29,7 @@ def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
         function=calc_atomization_energy,
         name="calc_atomization_energy",
         molecule=molecule,
-        atom_output=pw_atom.outputs["results"],
-        molecule_output=pw_mol.outputs["results"],
+        atom_output=pw_atom.outputs["parameters"],
+        molecule_output=pw_mol.outputs["parameters"],
     )
     return wg

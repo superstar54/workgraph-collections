@@ -3,7 +3,7 @@ from workgraph_collections.ase.common.core_level import (
     get_marked_structures,
     get_binding_energy,
 )
-from workgraph_collections.ase.espresso.base import pw_calculator
+from workgraph_collections.ase.espresso import pw_calculator
 from ase import Atoms
 from copy import deepcopy
 
@@ -24,7 +24,7 @@ def run_scf(
 ) -> WorkGraph:
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
-    from .base import pw_calculator
+    from .pw import pw_calculator
 
     wg = WorkGraph("XPS")
     # run the ground state calculation for the supercell
@@ -48,7 +48,7 @@ def run_scf(
             "pseudo_dir": pseudo_dir,
         }
     )
-    scf_ground.set_context({"results": "scf.ground"})
+    scf_ground.set_context({"parameters": "scf.ground"})
     # remove the original atoms
     marked_atoms.pop("original", None)
     for key, atoms in marked_atoms.items():
@@ -105,7 +105,7 @@ def run_scf(
             }
         )
         # save the output parameters to the context
-        scf.set_context({"results": f"scf.{key}"})
+        scf.set_context({"parameters": f"scf.{key}"})
     return wg
 
 

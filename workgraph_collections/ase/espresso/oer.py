@@ -83,7 +83,7 @@ def relax_structures(structures, pw_inputs):
         )
         scf.set(pw_inputs)
         # save the output parameters to the context
-        scf.set_context({"results": f"results.{key}"})
+        scf.set_context({"parameters": f"results.{key}"})
     return wg
 
 

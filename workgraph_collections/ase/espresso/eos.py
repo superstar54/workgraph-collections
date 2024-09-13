@@ -7,7 +7,7 @@ from ase import Atoms
 def all_scf(scaled_atoms, scf_inputs):
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
-    from .base import pw_calculator
+    from .pw import pw_calculator
 
     wg = WorkGraph()
     for key, atoms in scaled_atoms.items():
@@ -16,7 +16,7 @@ def all_scf(scaled_atoms, scf_inputs):
         )
         scf.set(scf_inputs)
         # save the output parameters to the context
-        scf.set_context({"results": f"results.{key}"})
+        scf.set_context({"parameters": f"results.{key}"})
     return wg
 
 
@@ -38,7 +38,7 @@ def eos_workgraph(
     2. Run the SCF calculation for each scaled atoms.
     3. Fit the EOS.
     """
-    from .base import pw_calculator
+    from .pw import pw_calculator
     from copy import deepcopy
 
     input_data = input_data or {}

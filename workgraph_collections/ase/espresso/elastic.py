@@ -28,7 +28,7 @@ def run_relaxation(
 ) -> WorkGraph:
     """Run relaxation for each deformed structure."""
     from aiida_workgraph import WorkGraph
-    from .base import pw_calculator
+    from .pw import pw_calculator
 
     wg = WorkGraph()
     wg.context = {"deformed_structure": deformed_structure_set}
@@ -46,7 +46,7 @@ def run_relaxation(
         )
         relax.set(relax_inputs)
         # save the output parameters to the context
-        relax.set_context({"results": f"results.{i}"})
+        relax.set_context({"parameters": f"results.{i}"})
     return wg
 
 
@@ -118,7 +118,7 @@ def elastic_workgraph(
     2. Run the relax calculation for each deformed atoms.
     3. Fit the elastic.
     """
-    from .base import pw_calculator
+    from .pw import pw_calculator
     from copy import deepcopy
 
     input_data = input_data or {}
