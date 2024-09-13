@@ -5,7 +5,11 @@ from aiida_workgraph import WorkGraph
 import pytest
 
 input_data = {
-    "system": {
+    "CONTROL": {
+        "calculation": "scf",
+        "verbosity": "high",
+    },
+    "SYSTEM": {
         "ecutwfc": 30,
         "ecutrho": 240,
         "occupations": "smearing",
