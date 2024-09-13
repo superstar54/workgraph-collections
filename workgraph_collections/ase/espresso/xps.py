@@ -3,7 +3,7 @@ from workgraph_collections.ase.common.core_level import (
     get_marked_structures,
     get_binding_energy,
 )
-from workgraph_collections.ase.espresso.base import pw_calculator
+from workgraph_collections.ase.espresso import pw_calculator
 from ase import Atoms
 from copy import deepcopy
 
@@ -24,7 +24,7 @@ def run_scf(
 ) -> WorkGraph:
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
-    from .base import pw_calculator
+    from .pw import pw_calculator
 
     wg = WorkGraph("XPS")
     # run the ground state calculation for the supercell

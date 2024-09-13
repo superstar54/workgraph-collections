@@ -1,6 +1,6 @@
 from aiida_workgraph import WorkGraph, task
 from ase import Atoms
-from .base import pw_calculator, pp_calculator
+from .pw import pw_calculator, pp_calculator
 from workgraph_collections.bader import bader_calculator
 
 

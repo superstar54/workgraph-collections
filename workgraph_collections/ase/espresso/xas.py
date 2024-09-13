@@ -20,7 +20,7 @@ def run_all_xspectra_prod(
 ) -> WorkGraph:
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
-    from .base import pw_calculator, xspectra_calculator
+    from .pw import pw_calculator, xspectra_calculator
     from copy import deepcopy
 
     wg = WorkGraph()
