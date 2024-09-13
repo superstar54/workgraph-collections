@@ -37,7 +37,7 @@ def core_hole_pseudo_workgraph(
         "PythonJob",
         function=calc_correction,
         name="calc_correction",
-        core_hole_output=core_hole_task.outputs["results"],
-        ground_output=ground_task.outputs["results"],
+        core_hole_output=core_hole_task.outputs["ld1"],
+        ground_output=ground_task.outputs["ld1"],
     )
     return wg
