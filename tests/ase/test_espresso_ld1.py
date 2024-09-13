@@ -41,4 +41,4 @@ def test_base_ld1():
     results = ld1_calculator(
         input_data=input_data, pseudo_potential_test_cards=pseudo_potential_test_cards
     )
-    np.isclose(results["Etot"]["eV"], -500976.284196)
+    np.isclose(results["ld1"]["Etot"]["eV"], -500976.284196)

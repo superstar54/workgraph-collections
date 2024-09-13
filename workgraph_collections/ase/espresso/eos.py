@@ -16,7 +16,7 @@ def all_scf(scaled_atoms, scf_inputs):
         )
         scf.set(scf_inputs)
         # save the output parameters to the context
-        scf.set_context({"results": f"results.{key}"})
+        scf.set_context({"parameters": f"results.{key}"})
     return wg
 
 

@@ -48,7 +48,7 @@ def run_scf(
             "pseudo_dir": pseudo_dir,
         }
     )
-    scf_ground.set_context({"results": "scf.ground"})
+    scf_ground.set_context({"parameters": "scf.ground"})
     # remove the original atoms
     marked_atoms.pop("original", None)
     for key, atoms in marked_atoms.items():
@@ -105,7 +105,7 @@ def run_scf(
             }
         )
         # save the output parameters to the context
-        scf.set_context({"results": f"scf.{key}"})
+        scf.set_context({"parameters": f"scf.{key}"})
     return wg
 
 

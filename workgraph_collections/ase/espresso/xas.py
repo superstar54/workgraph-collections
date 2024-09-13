@@ -66,7 +66,7 @@ def run_all_xspectra_prod(
                 }
             )
         scf_task.set(scf_inputs)
-        scf_task.set_context({"results": f"scf_results.{key}"})
+        scf_task.set_context({"parameters": f"scf_results.{key}"})
         for calc_number, vector in enumerate(eps_vectors):
             xspectra_task = wg.tasks.new(
                 "PythonJob",
