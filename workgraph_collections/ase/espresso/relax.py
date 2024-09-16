@@ -41,22 +41,31 @@ def inspect_relax(
     return results
 
 
-@task.graph_builder(outputs=[{"name": "atoms", "from": "relax.atoms"}])
+@task.graph_builder(
+    outputs=[
+        {"name": "atoms", "from": "relax.atoms"},
+        {"name": "parameters", "from": "context.parameters"},
+    ]
+)
 def relax_workgraph(
     atoms: Atoms = None,
-    pw_command: str = "pw.x",
-    inputs: dict = None,
+    command: str = "pw.x",
+    computer: str = "localhost",
+    input_data: dict = None,
     pseudopotentials: dict = None,
     pseudo_dir: str = ".",
+    kpts: list = None,
+    kspacing: float = None,
     run_scf: bool = True,
     max_iterations: int = 5,
     volume_threshold: float = 0.1,
+    metadata: dict = None,
 ):
     """Construct a WorkGraph to relax a structure using Quantum ESPRESSO's pw.x.
 
     Parameters:
         atoms (ase.Atoms): Initial atomic structure to relax.
-        pw_command (str): Command to execute pw.x.
+        command (str): Command to execute pw.x.
         inputs (dict): Additional inputs for the calculations (e.g., 'relax' and 'scf' inputs).
         pseudopotentials (dict): Mapping of elements to their pseudopotential files.
         pseudo_dir (str): Directory containing pseudopotential files.
@@ -69,11 +78,11 @@ def relax_workgraph(
     """
     from aiida_workgraph.orm.atoms import AtomsData
 
-    inputs = {} if inputs is None else inputs
+    input_data = {} if input_data is None else input_data
     # create workgraph
     wg = WorkGraph("BandsStructure")
     wg.context = {
-        "current_atoms": AtomsData(atoms),
+        "current_atoms": atoms if isinstance(atoms, AtomsData) else AtomsData(atoms),
         "prev_atoms": None,
         "current_number_of_bands": None,
         "prev_cell_volume": None,
@@ -94,14 +103,18 @@ def relax_workgraph(
         pw_calculator,
         name="relax",
         atoms="{{current_atoms}}",
-        command=pw_command,
+        command=command,
+        computer=computer,
+        metadata=metadata,
+        input_data=input_data,
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
+        kpts=kpts,
+        kspacing=kspacing,
         calculation="vc-relax",
     )
-    relax_inputs = inputs.get("relax", {})
-    relax_task.set(relax_inputs)
     atoms = relax_task.outputs["atoms"]
+    relax_task.set_context({"parameters": "parameters"})
     # -------- inspect relax -----------
     inspect_relax_task = wg.add_task(
         inspect_relax,
@@ -126,12 +139,16 @@ def relax_workgraph(
             pw_calculator,
             name="scf",
             atoms=atoms,
-            command=pw_command,
+            command=command,
+            computer=computer,
+            metadata=metadata,
+            input_data=input_data,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
             calculation="scf",
+            kpts=kpts,
+            kspacing=kspacing,
         )
-        scf_inputs = inputs.get("scf", {})
-        scf_task.set(scf_inputs)
+        scf_task.set_context({"parameters": "parameters"})
 
     return wg

@@ -13,6 +13,7 @@ Here are the collection of WorkGraphs for Quantum ESPRESSO
    elastic
    bands
    pdos
+   surface_slabs
    bader
    xps
    xas
