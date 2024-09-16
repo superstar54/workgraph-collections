@@ -51,7 +51,7 @@ def get_slabs_from_miller_indices_ase(
             periodic=periodic,
             center_slab=center_slab,
         )
-        slabs["".join(map(str, index)).replace("-", "m")] = slab
+        slabs["slab" + "".join(map(str, index)).replace("-", "m")] = slab
     return {"slabs": slabs}
 
 
