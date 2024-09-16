@@ -1,5 +1,6 @@
 from aiida_workgraph import task
 from ase import Atoms
+from ase_quantumespresso.parsers.exit_code import PwExitCodes
 
 import dataclasses
 
@@ -91,6 +92,28 @@ def handle_electronic_convergence_not_reached(task):
     return msg
 
 
+def handle_relax_recoverable_electronic_convergence_error(task):
+    """Handle various exit codes for recoverable `relax` calculations with failed electronic convergence.
+
+    These exit codes signify that the electronic convergence thresholds were not met, but the output structure is
+    usable, so the solution is to simply restart from scratch but from the output structure and with a reduced
+    ``mixing_beta``.
+    """
+    factor = 0.8
+    input_data = task.inputs["input_data"].value
+    mixing_beta = input_data.get("ELECTRONS", {}).get("mixing_beta", 0.7)
+    mixing_beta_new = mixing_beta * factor
+    input_data.setdefault("ELECTRONS", {})
+    input_data["ELECTRONS"]["mixing_beta"] = mixing_beta_new
+    task.set({"atoms": task.outputs["atoms"].value.value})
+    set_restart_type(RestartType.FROM_SCRATCH, task)
+    msg = (
+        f"no electronic convergence but clean shutdown: reduced beta mixing from {mixing_beta} to {mixing_beta_new}"
+        "restarting from scratch but using output structure."
+    )
+    return msg
+
+
 @task.pythonjob(
     outputs=[
         {"name": "atoms"},
@@ -104,13 +127,30 @@ def handle_electronic_convergence_not_reached(task):
     error_handlers=[
         {
             "handler": handle_relax_recoverable_ionic_convergence_error,
-            "exit_codes": [500, 502],
+            "exit_codes": [
+                PwExitCodes.ERROR_IONIC_CONVERGENCE_NOT_REACHED,
+                PwExitCodes.ERROR_IONIC_CYCLE_BFGS_HISTORY_FAILURE,
+                PwExitCodes.ERROR_IONIC_CYCLE_EXCEEDED_NSTEP,
+                PwExitCodes.ERROR_IONIC_CYCLE_BFGS_HISTORY_AND_FINAL_SCF_FAILURE,
+            ],
             "max_retries": 5,
         },
-        {"handler": handle_out_of_walltime, "exit_codes": [400], "max_retries": 5},
+        {
+            "handler": handle_out_of_walltime,
+            "exit_codes": [PwExitCodes.ERROR_OUT_OF_WALLTIME],
+            "max_retries": 5,
+        },
         {
             "handler": handle_electronic_convergence_not_reached,
-            "exit_codes": [410],
+            "exit_codes": [PwExitCodes.ERROR_ELECTRONIC_CONVERGENCE_NOT_REACHED],
+            "max_retries": 5,
+        },
+        {
+            "handler": handle_relax_recoverable_electronic_convergence_error,
+            "exit_codes": [
+                PwExitCodes.ERROR_IONIC_CYCLE_ELECTRONIC_CONVERGENCE_NOT_REACHED,
+                PwExitCodes.ERROR_IONIC_CONVERGENCE_REACHED_FINAL_SCF_FAILED,
+            ],
             "max_retries": 5,
         },
     ],
