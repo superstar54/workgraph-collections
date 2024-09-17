@@ -1,7 +1,7 @@
 from aiida_workgraph import task, WorkGraph
-from workgraph_collections.ase.common.surface import get_slabs_from_miller_indices_ase
+from workgraph_collections.ase.common.surface import get_adsorption_structure
 from ase import Atoms
-from typing import List, Dict
+from typing import Dict
 
 
 @task.graph_builder(
@@ -10,7 +10,7 @@ from typing import List, Dict
         {"name": "structures", "from": "context.structures"},
     ]
 )
-def relax_slabs(slabs, inputs):
+def relax_structures(slabs, inputs):
     """Run the scf calculation for each atoms."""
     from aiida_workgraph import WorkGraph
     from workgraph_collections.ase.espresso.relax import relax_workgraph
@@ -67,25 +67,26 @@ def get_surface_energy(
 
 @task.graph_builder(
     outputs=[
-        {"name": "parameters", "from": "relax_slabs.parameters"},
-        {"name": "structures", "from": "relax_slabs.structures"},
+        {"name": "parameters", "from": "relax_structures.parameters"},
+        {"name": "structures", "from": "relax_structures.structures"},
     ]
 )
-def slabs_workgraph(
-    atoms: Atoms = None,
+def adsorption_workgraph(
+    slab: Atoms = None,
+    adsorbate: Atoms = None,
+    distance: float = 2.0,
+    positions: tuple = ("ontop", "bridge", "hollow"),
     command: str = "pw.x",
     computer: str = "localhost",
-    miller_indices: List[list] = None,
-    layers: int = 3,
-    vacuum: float = 5.0,
     pseudopotentials: dict = None,
     pseudo_dir: str = None,
     kpts: list = None,
     kspacing: float = None,
     input_data: dict = None,
     metadata: dict = None,
-    relax_bulk: bool = True,
-    calc_surface_energy: bool = False,
+    relax_slab: bool = True,
+    calc_adsorption_energy: bool = False,
+    adsorbate_energy: float = None,
 ):
     """Workgraph for generating slabs and relax them.
     1. Relax the bulk structure.
@@ -97,38 +98,38 @@ def slabs_workgraph(
     input_data = input_data or {}
 
     wg = WorkGraph("slabs")
-    # -------- relax bulk -----------
-    if relax_bulk:
-        relax_bulk_task = wg.tasks.new(
+    # -------- relax slab -----------
+    if relax_slab:
+        relax_slab_task = wg.tasks.new(
             relax_workgraph,
-            name="relax_bulk",
+            name="relax_slab",
             command=command,
             input_data=input_data,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
-            atoms=atoms,
+            atoms=slab,
             metadata=metadata,
             computer=computer,
             kpts=kpts,
             kspacing=kspacing,
         )
-        atoms = relax_bulk_task.outputs["atoms"]
-    # -------- generate_slabs -----------
-    generate_slabs_task = wg.tasks.new(
-        get_slabs_from_miller_indices_ase,
-        name="generate_slabs",
-        atoms=atoms,
-        indices=miller_indices,
-        layers=layers,
-        vacuum=vacuum,
+        slab = relax_slab_task.outputs["atoms"]
+    # -------- generate slab with adsorbate -----------
+    add_adsorbate_task = wg.tasks.new(
+        get_adsorption_structure,
+        name="add_adsorbate",
+        slab=slab,
+        adsorbate=adsorbate,
+        distance=distance,
+        positions=positions,
         computer=computer,
         metadata=metadata,
     )
-    # -------- relax_slabs -----------
-    relax_slabs_task = wg.tasks.new(
-        relax_slabs,
-        name="relax_slabs",
-        slabs=generate_slabs_task.outputs["slabs"],
+    # -------- relax_structures -----------
+    relax_structures_task = wg.tasks.new(
+        relax_structures,
+        name="relax_structures",
+        structures=add_adsorbate_task.outputs["structures"],
         inputs={
             "command": command,
             "input_data": input_data,
@@ -140,13 +141,14 @@ def slabs_workgraph(
             "computer": computer,
         },
     )
-    if calc_surface_energy:
+    if calc_adsorption_energy:
+        if adsorbate_energy is None:
+            raise ValueError("adsorbate_energy must be provided")
         wg.tasks.new(
             get_surface_energy,
             name="get_surface_energy",
-            bulk_atoms=atoms,
-            bulk_parameters=relax_bulk_task.outputs["parameters"],
-            slab_parameters=relax_slabs_task.outputs["parameters"],
-            slab_structures=relax_slabs_task.outputs["structures"],
+            bulk_parameters=relax_slab_task.outputs["parameters"],
+            adsorbate_energy=adsorbate_energy,
+            slab_parameters=relax_structures_task.outputs["parameters"],
         )
     return wg
