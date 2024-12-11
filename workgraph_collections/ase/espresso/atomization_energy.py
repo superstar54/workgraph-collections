@@ -29,7 +29,7 @@ def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
         function=calc_atomization_energy,
         name="calc_atomization_energy",
         molecule=molecule,
-        atom_output=pw_atom.outputs["parameters"],
+        atom_output=pw_atom.outputs.parameters,
         molecule_output=pw_mol.outputs["parameters"],
     )
     return wg

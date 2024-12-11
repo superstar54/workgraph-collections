@@ -157,7 +157,7 @@ def xps_workgraph(
     run_scf_task = wg.add_task(
         run_scf,
         name="run_scf",
-        marked_atoms=marked_atoms_task.outputs["structures"],
+        marked_atoms=marked_atoms_task.outputs.structures,
         core_hole_pseudos=core_hole_pseudos,
         is_molecule=marked_structures_inputs.get("is_molecule", False),
     )

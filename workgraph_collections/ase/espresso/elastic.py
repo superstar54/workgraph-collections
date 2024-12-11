@@ -162,7 +162,7 @@ def elastic_workgraph(
     run_relaxation_task = wg.add_task(
         run_relaxation,
         name="run_relaxation",
-        deformed_structure_set=deformed_structure_task.outputs["result"],
+        deformed_structure_set=deformed_structure_task.outputs.result,
         relax_inputs={
             "command": command,
             "input_data": input_data,
@@ -179,7 +179,7 @@ def elastic_workgraph(
         function=fit_elastic_constants,
         name="fit_elastic",
         atoms=atoms,
-        deformed_structure_set=deformed_structure_task.outputs["result"],
+        deformed_structure_set=deformed_structure_task.outputs.result,
         relax_results=run_relaxation_task.outputs["relax_results"],
         symmetry=symmetry,
         computer=computer,

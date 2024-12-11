@@ -140,7 +140,7 @@ def xas_workgraph(
     wg.add_task(
         run_all_xspectra_prod,
         name="run_all_xspectra_prod",
-        marked_atoms=marked_atoms_task.outputs["result"],
+        marked_atoms=marked_atoms_task.outputs.result,
         commands=commands,
         inputs=inputs,
         eps_vectors=eps_vectors,

@@ -78,13 +78,13 @@ def eos_workgraph(
         all_scf,
         name="all_scf",
         calculator=calculator,
-        structures=scale_structure1.outputs["structures"],
+        structures=scale_structure1.outputs.structures,
         scf_inputs=scf_inputs,
     )
     wg.add_task(
         fit_eos,
         name="fit_eos",
         volumes=scale_structure1.outputs["volumes"],
-        scf_outputs=all_scf1.outputs["result"],
+        scf_outputs=all_scf1.outputs.result,
     )
     return wg

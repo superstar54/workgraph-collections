@@ -185,5 +185,5 @@ def oer_site_workgraph(
     wg.task.new(
         relax_structures,
         name=relax_structures,
-        structures=build_adsorbate_task.outputs["structures"],
+        structures=build_adsorbate_task.outputs.structures,
     )

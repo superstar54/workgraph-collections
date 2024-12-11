@@ -85,7 +85,7 @@ def bands_workgraph(
         command=pw_command,
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
-        kpts=find_kpoints_path_task.outputs["result"],
+        kpts=find_kpoints_path_task.outputs.result,
         parent_folder=scf_parent_folder,
         parent_output_folder="out",
         parent_folder_name="out",

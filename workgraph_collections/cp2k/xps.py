@@ -145,7 +145,7 @@ def xps_workgraph(
         binding_energy,
         name="binding_energy",
         sites_info=structures_task.outputs["output_parameters"],
-        scf_outputs=scf_task.outputs["result"],
+        scf_outputs=scf_task.outputs.result,
         corrections=correction_energies,
         energy_units="a.u",
     )

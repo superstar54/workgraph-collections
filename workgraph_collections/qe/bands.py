@@ -93,7 +93,7 @@ def bands_workgraph(
             name="inspect_relax",
             parameters=relax_task.outputs["output_parameters"],
         )
-        current_number_of_bands = inspect_relax_task.outputs["result"]
+        current_number_of_bands = inspect_relax_task.outputs.result
     # -------- seekpath -----------
     if bands_kpoints_distance is not None:
         seekpath_task = wg.add_task(

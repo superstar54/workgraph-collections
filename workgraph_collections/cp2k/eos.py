@@ -40,7 +40,7 @@ def eos_workgraph(
     all_scf1 = wg.add_task(
         all_scf,
         name="all_scf",
-        structures=scale_structure1.outputs["structures"],
+        structures=scale_structure1.outputs.structures,
         scf_inputs={
             "code": code,
             "parameters": orm.Dict(parameters),
@@ -52,6 +52,6 @@ def eos_workgraph(
         fit_eos,
         name="fit_eos",
         volumes=scale_structure1.outputs["volumes"],
-        scf_outputs=all_scf1.outputs["result"],
+        scf_outputs=all_scf1.outputs.result,
     )
     return wg
