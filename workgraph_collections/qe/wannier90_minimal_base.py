@@ -14,12 +14,12 @@ def wannier90_minimal_base_workgraph(structure=None, inputs=None):
     wg = WorkGraph("Wannier90_Minimal_Base")
     wg.context = {}
     # -------- scf -----------
-    scf_task = wg.tasks.new(PwBaseWorkChain, name="scf")
+    scf_task = wg.add_task(PwBaseWorkChain, name="scf")
     scf_inputs = inputs.get("scf", {})
     scf_inputs["pw.structure"] = structure
     scf_task.set(scf_inputs)
     # -------- nscf -----------
-    nscf_task = wg.tasks.new(PwBaseWorkChain, name="nscf")
+    nscf_task = wg.add_task(PwBaseWorkChain, name="nscf")
     nscf_inputs = inputs.get("nscf", {})
     nscf_inputs.update(
         {
@@ -29,7 +29,7 @@ def wannier90_minimal_base_workgraph(structure=None, inputs=None):
     )
     nscf_task.set(nscf_inputs)
     # -------- wannier90_pp -----------
-    wannier90_pp = wg.tasks.new(Wannier90BaseWorkChain, name="wannier90_pp")
+    wannier90_pp = wg.add_task(Wannier90BaseWorkChain, name="wannier90_pp")
     wannier90_pp_inputs = inputs.get("wannier90_pp", {})
     wannier90_pp_inputs.update(
         {
@@ -38,7 +38,7 @@ def wannier90_minimal_base_workgraph(structure=None, inputs=None):
     )
     wannier90_pp.set(wannier90_pp_inputs)
     # -------- pw2wannier90 -----------
-    pw2wannier90 = wg.tasks.new(Pw2wannier90BaseWorkChain, name="pw2wannier90")
+    pw2wannier90 = wg.add_task(Pw2wannier90BaseWorkChain, name="pw2wannier90")
     pw2wannier90_inputs = inputs.get("pw2wannier90", {})
     pw2wannier90.set(
         {
@@ -48,7 +48,7 @@ def wannier90_minimal_base_workgraph(structure=None, inputs=None):
     )
     pw2wannier90.set(pw2wannier90_inputs)
     # -------- wannier90 -----------
-    wannier90 = wg.tasks.new(Wannier90BaseWorkChain, name="wannier90")
+    wannier90 = wg.add_task(Wannier90BaseWorkChain, name="wannier90")
     wannier90_inputs = inputs.get("wannier90", {})
     wannier90_inputs.update(
         {

@@ -23,7 +23,7 @@ input_data = {
 def test_vibrations(n2_molecule, pseudo_dir, metadata_aiida):
     pseudopotentials = {"N": "N.pbe-n-rrkjus_psl.1.0.0.UPF"}
     wg = WorkGraph("test_vibrations")
-    vibrations_task = wg.tasks.new("PythonJob", name="vibrations", function=vibrations)
+    vibrations_task = wg.add_task("PythonJob", name="vibrations", function=vibrations)
     vibrations_task.set(
         {
             "atoms": n2_molecule,

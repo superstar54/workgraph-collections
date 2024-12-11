@@ -38,7 +38,7 @@ def run_relaxation(
     # becareful, we generate new data here, thus break the data provenance!
     # that's why I put the deformed_structure in the context, so that we can link them
     for i in range(len(deformed_atoms)):
-        relax = wg.tasks.new(
+        relax = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name=f"relax_{i}",
@@ -46,7 +46,7 @@ def run_relaxation(
         )
         relax.set(relax_inputs)
         # save the output parameters to the context
-        relax.set_context({"parameters": f"results.{i}"})
+        relax.set_context({f"results.{i}": "parameters"})
     return wg
 
 
@@ -126,7 +126,7 @@ def elastic_workgraph(
     wg = WorkGraph("Elastic")
     # -------- relax -----------
     if run_relax:
-        relax_task = wg.tasks.new(
+        relax_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="relax",
@@ -147,7 +147,7 @@ def elastic_workgraph(
         )
         atoms = relax_task.outputs["atoms"]
     # -------- deformed_structure -----------
-    deformed_structure_task = wg.tasks.new(
+    deformed_structure_task = wg.add_task(
         "PythonJob",
         function=get_deformed_structure_set,
         name="deformed_structure",
@@ -159,7 +159,7 @@ def elastic_workgraph(
         metadata=metadata,
     )
     # -------- run_relaxation -----------
-    run_relaxation_task = wg.tasks.new(
+    run_relaxation_task = wg.add_task(
         run_relaxation,
         name="run_relaxation",
         deformed_structure_set=deformed_structure_task.outputs["result"],
@@ -174,7 +174,7 @@ def elastic_workgraph(
         },
     )
     # -------- fit_elastic -----------
-    wg.tasks.new(
+    wg.add_task(
         "PythonJob",
         function=fit_elastic_constants,
         name="fit_elastic",

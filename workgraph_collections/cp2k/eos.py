@@ -12,10 +12,10 @@ def all_scf(structures, scf_inputs):
 
     wg = WorkGraph()
     for key, structure in structures.items():
-        scf = wg.tasks.new(Cp2kCalculation, name=f"scf_{key}", structure=structure)
+        scf = wg.add_task(Cp2kCalculation, name=f"scf_{key}", structure=structure)
         scf.set(scf_inputs)
         # save the output parameters to the context
-        scf.set_context({"output_parameters": f"result.{key}"})
+        scf.set_context({f"result.{key}": "output_parameters"})
     return wg
 
 
@@ -34,10 +34,10 @@ def eos_workgraph(
     3. Fit the EOS.
     """
     wg = WorkGraph("EOS")
-    scale_structure1 = wg.tasks.new(
+    scale_structure1 = wg.add_task(
         scale_structure, name="scale_structure", structure=structure, scales=scales
     )
-    all_scf1 = wg.tasks.new(
+    all_scf1 = wg.add_task(
         all_scf,
         name="all_scf",
         structures=scale_structure1.outputs["structures"],
@@ -48,7 +48,7 @@ def eos_workgraph(
             "metadata": metadata,
         },
     )
-    wg.tasks.new(
+    wg.add_task(
         fit_eos,
         name="fit_eos",
         volumes=scale_structure1.outputs["volumes"],

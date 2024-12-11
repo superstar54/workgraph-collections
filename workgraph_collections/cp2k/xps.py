@@ -51,7 +51,7 @@ def run_scf(
         core_hole_treatment = "FULL"
     # ground state
     supercell = marked_structures.pop("supercell", structure)
-    scf_ground = wg.tasks.new(Cp2kCalculation, name="scf_ground")
+    scf_ground = wg.add_task(Cp2kCalculation, name="scf_ground")
     scf_ground.set(
         {
             "code": code,
@@ -61,7 +61,7 @@ def run_scf(
             "structure": supercell,
         }
     )
-    scf_ground.set_context({"output_parameters": "scf.ground"})
+    scf_ground.set_context({"scf.ground": "output_parameters"})
     marked_structures = marked_structures["marked_structures"]
     # excited state node
     for key, marked_structure in marked_structures.items():
@@ -76,7 +76,7 @@ def run_scf(
             ch_parameters["FORCE_EVAL"]["DFT"].update(
                 {"UKS": False, "MULTIPLICITY": 1, "CHARGE": 0}
             )
-        scf_ch = wg.tasks.new(Cp2kCalculation, name=f"scf_{key}")
+        scf_ch = wg.add_task(Cp2kCalculation, name=f"scf_{key}")
         scf_ch.set(
             {
                 "code": code,
@@ -86,7 +86,7 @@ def run_scf(
                 "structure": marked_structure,
             }
         )
-        scf_ch.set_context({"output_parameters": f"scf.{key}"})
+        scf_ch.set_context({f"scf.{key}": "output_parameters"})
     return wg
 
 
@@ -112,14 +112,14 @@ def xps_workgraph(
 
     wg = WorkGraph("XPS")
     if atoms_list:
-        structures_task = wg.tasks.new(
+        structures_task = wg.add_task(
             GetMarkedStructuresTask,
             name="marked_structures",
             structure=structure,
             atoms_list=atoms_list,
         )
     else:
-        structures_task = wg.tasks.new(
+        structures_task = wg.add_task(
             GetXspectraStructureTask,
             name="marked_structures",
             structure=structure,
@@ -128,7 +128,7 @@ def xps_workgraph(
                 "is_molecule_input": Bool(is_molecule),
             },
         )
-    scf_task = wg.tasks.new(
+    scf_task = wg.add_task(
         run_scf,
         name="run_scf",
         structure=structure,
@@ -141,7 +141,7 @@ def xps_workgraph(
         is_molecule=is_molecule,
         marked_structures=structures_task.outputs["_outputs"],
     )
-    wg.tasks.new(
+    wg.add_task(
         binding_energy,
         name="binding_energy",
         sites_info=structures_task.outputs["output_parameters"],

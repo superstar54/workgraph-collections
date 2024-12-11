@@ -23,7 +23,7 @@ def pdos_workgraph(
     wg = WorkGraph("PDOS")
     # -------- relax -----------
     if run_relax:
-        relax_task = wg.tasks.new(
+        relax_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="relax",
@@ -38,7 +38,7 @@ def pdos_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- scf -----------
     if run_scf:
-        scf_task = wg.tasks.new(
+        scf_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="scf",
@@ -52,7 +52,7 @@ def pdos_workgraph(
         scf_task.set(scf_inputs)
         scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- nscf -----------
-    nscf_task = wg.tasks.new(
+    nscf_task = wg.add_task(
         "PythonJob",
         function=pw_calculator,
         name="nscf",
@@ -68,7 +68,7 @@ def pdos_workgraph(
     nscf_inputs = inputs.get("nscf", {})
     nscf_task.set(nscf_inputs)
     # -------- dos -----------
-    dos_task = wg.tasks.new(
+    dos_task = wg.add_task(
         "PythonJob",
         function=dos_calculator,
         name="dos",
@@ -81,7 +81,7 @@ def pdos_workgraph(
     dos_input["input_data"].update({"outdir": "parent_folder"})
     dos_task.set(dos_input)
     # -------- projwfc -----------
-    projwfc_task = wg.tasks.new(
+    projwfc_task = wg.add_task(
         "PythonJob",
         function=projwfc_calculator,
         name="projwfc",

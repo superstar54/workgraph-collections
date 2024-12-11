@@ -75,7 +75,7 @@ def bands_workgraph(
     wg = WorkGraph("BandsStructure")
     # ------- relax -----------
     if run_relax:
-        relax_task = wg.tasks.new(PwRelaxWorkChain, name="relax", structure=structure)
+        relax_task = wg.add_task(PwRelaxWorkChain, name="relax", structure=structure)
         # retrieve the relax inputs from the inputs, and set the relax inputs
         relax_inputs = inputs.get("relax", {})
         relax_inputs.update(
@@ -88,7 +88,7 @@ def bands_workgraph(
         # override the input structure with the relaxed structure
         structure = relax_task.outputs["output_structure"]
         # -------- inspect_relax -----------
-        inspect_relax_task = wg.tasks.new(
+        inspect_relax_task = wg.add_task(
             inspect_relax,
             name="inspect_relax",
             parameters=relax_task.outputs["output_parameters"],
@@ -96,7 +96,7 @@ def bands_workgraph(
         current_number_of_bands = inspect_relax_task.outputs["result"]
     # -------- seekpath -----------
     if bands_kpoints_distance is not None:
-        seekpath_task = wg.tasks.new(
+        seekpath_task = wg.add_task(
             SeekpathTask,
             name="seekpath",
             structure=structure,
@@ -108,13 +108,13 @@ def bands_workgraph(
     # -------- scf -----------
     # retrieve the scf inputs from the inputs, and update the scf parameters
     scf_inputs = inputs.get("scf", {"pw": {}})
-    scf_parameters = wg.tasks.new(
+    scf_parameters = wg.add_task(
         update_scf_parameters,
         name="scf_parameters",
         parameters=scf_inputs["pw"].get("parameters", {}),
         current_number_of_bands=current_number_of_bands,
     )
-    scf_task = wg.tasks.new(PwBaseWorkChain, name="scf")
+    scf_task = wg.add_task(PwBaseWorkChain, name="scf")
     # update inputs
     scf_inputs.update(
         {
@@ -127,14 +127,14 @@ def bands_workgraph(
     scf_task.set(scf_inputs)
     # -------- bands -----------
     bands_inputs = inputs.get("bands", {"pw": {}})
-    bands_parameters = wg.tasks.new(
+    bands_parameters = wg.add_task(
         update_bands_parameters,
         name="bands_parameters",
         parameters=bands_inputs["pw"].get("parameters", {}),
         nbands_factor=nbands_factor,
         scf_parameters=scf_task.outputs["output_parameters"],
     )
-    bands_task = wg.tasks.new(PwBaseWorkChain, name="bands", kpoints=bands_kpoints)
+    bands_task = wg.add_task(PwBaseWorkChain, name="bands", kpoints=bands_kpoints)
     bands_inputs.update(
         {
             "pw.code": code,

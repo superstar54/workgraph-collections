@@ -38,7 +38,7 @@ def bands_workgraph(
     }
     # -------- relax -----------
     if run_relax:
-        relax_task = wg.tasks.new(
+        relax_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="relax",
@@ -52,7 +52,7 @@ def bands_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- scf -----------
     if run_scf:
-        scf_task = wg.tasks.new(
+        scf_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="scf",
@@ -65,7 +65,7 @@ def bands_workgraph(
         scf_task.set(scf_inputs)
         scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- kpoints path -----------
-    find_kpoints_path_task = wg.tasks.new(
+    find_kpoints_path_task = wg.add_task(
         "PythonJob",
         function=find_kpoint_path,
         name="find_kponits_path",
@@ -77,7 +77,7 @@ def bands_workgraph(
     find_kpoints_path_inputs = inputs.get("find_kpoints_path", {})
     find_kpoints_path_task.set(find_kpoints_path_inputs)
     # -------- bands -----------
-    bands_task = wg.tasks.new(
+    bands_task = wg.add_task(
         "PythonJob",
         function=pw_calculator,
         name="bands",
