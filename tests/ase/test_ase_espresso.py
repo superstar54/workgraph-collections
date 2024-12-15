@@ -66,7 +66,7 @@ def test_atomization_energy(n_atom, n2_molecule, pseudo_dir, metadata_aiida):
     wg.tasks.calc_atomization_energy.set(
         {"molecule": n2_molecule, "computer": "localhost"}
     )
-    wg.submit(wait=True, timeout=200)
+    wg.run()
 
     assert np.isclose(
         wg.tasks.calc_atomization_energy.outputs.result.value.value,
@@ -92,7 +92,7 @@ def test_eos(bulk_si, pseudo_dir, metadata_aiida):
     )
     # ------------------------- Submit the calculation -------------------
     # wg.run()
-    wg.submit(wait=True, timeout=200)
+    wg.run()
 
     assert np.isclose(
         wg.tasks["fit_eos"].outputs.result.value.get_dict()["B"],
