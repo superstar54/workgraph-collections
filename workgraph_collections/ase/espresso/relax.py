@@ -51,6 +51,7 @@ def relax_workgraph(
     atoms: Atoms = None,
     command: str = "pw.x",
     computer: str = "localhost",
+    calculation: str = "vc-relax",
     input_data: dict = None,
     pseudopotentials: dict = None,
     pseudo_dir: str = ".",
@@ -111,7 +112,7 @@ def relax_workgraph(
         pseudo_dir=pseudo_dir,
         kpts=kpts,
         kspacing=kspacing,
-        calculation="vc-relax",
+        calculation=calculation,
     )
     atoms = relax_task.outputs["atoms"]
     relax_task.set_context({"parameters": "parameters"})
