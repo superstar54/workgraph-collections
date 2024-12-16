@@ -17,12 +17,10 @@ def relax_slabs(slabs, inputs):
 
     wg = WorkGraph()
     for key, atoms in slabs.items():
-        scf = wg.tasks.new(
-            relax_workgraph, name=f"relax_{key}", atoms=atoms, calculation="relax"
-        )
+        scf = wg.add_task(relax_workgraph, name=f"relax_{key}", atoms=atoms)
         scf.set(inputs)
         scf.set_context(
-            {"parameters": f"parameters.{key}", "atoms": f"structures.{key}"}
+            {f"parameters.{key}": "parameters", f"structures.{key}": "atoms"}
         )
     return wg
 
@@ -98,8 +96,8 @@ def slabs_workgraph(
 
     wg = WorkGraph("slabs")
     # -------- relax bulk -----------
-    if relax_bulk:
-        relax_bulk_task = wg.tasks.new(
+    if run_relax:
+        relax_bulk_task = wg.add_task(
             relax_workgraph,
             name="relax_bulk",
             command=command,
@@ -114,7 +112,7 @@ def slabs_workgraph(
         )
         atoms = relax_bulk_task.outputs["atoms"]
     # -------- generate_slabs -----------
-    generate_slabs_task = wg.tasks.new(
+    generate_slabs_task = wg.add_task(
         get_slabs_from_miller_indices_ase,
         name="generate_slabs",
         atoms=atoms,
@@ -125,7 +123,7 @@ def slabs_workgraph(
         metadata=metadata,
     )
     # -------- relax_slabs -----------
-    relax_slabs_task = wg.tasks.new(
+    relax_slabs_task = wg.add_task(
         relax_slabs,
         name="relax_slabs",
         slabs=generate_slabs_task.outputs["slabs"],

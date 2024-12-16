@@ -97,7 +97,7 @@ def relax_workgraph(
     while_task = wg.add_task(
         "While",
         name="while",
-        conditions=should_run_while_task.outputs["result"],
+        conditions=should_run_while_task.outputs.result,
         max_iterations=max_iterations,
     )
     relax_task = wg.add_task(

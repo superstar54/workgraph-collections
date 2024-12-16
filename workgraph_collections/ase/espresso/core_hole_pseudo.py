@@ -22,18 +22,16 @@ def core_hole_pseudo_workgraph(
     core_hole_inputs = {} if core_hole_inputs is None else core_hole_inputs
 
     wg = WorkGraph("Core-hole pseudo workgraph")
-    ground_task = wg.tasks.new(
+    ground_task = wg.add_task(
         "PythonJob",
         function=ld1_calculator,
         name="ground",
     )
     ground_task.set(ground_inputs)
-    core_hole_task = wg.tasks.new(
-        "PythonJob", function=ld1_calculator, name="core_hole"
-    )
+    core_hole_task = wg.add_task("PythonJob", function=ld1_calculator, name="core_hole")
     core_hole_task.set(core_hole_inputs)
     # create the task to calculate the atomization energy
-    wg.tasks.new(
+    wg.add_task(
         "PythonJob",
         function=calc_correction,
         name="calc_correction",

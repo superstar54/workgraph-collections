@@ -78,12 +78,12 @@ def relax_structures(structures, pw_inputs):
 
     wg = WorkGraph()
     for key, atoms in structures.items():
-        scf = wg.tasks.new(
+        scf = wg.add_task(
             "PythonJob", function=pw_calculator, name=f"pw_{key}", atoms=atoms
         )
         scf.set(pw_inputs)
         # save the output parameters to the context
-        scf.set_context({"parameters": f"results.{key}"})
+        scf.set_context({f"results.{key}": "parameters"})
     return wg
 
 
@@ -172,7 +172,7 @@ def oer_site_workgraph(
         site_position = site + np.array([0, 0, height])
 
     wg = WorkGraph("OER")
-    build_adsorbate_task = wg.tasks.new(
+    build_adsorbate_task = wg.add_task(
         "PythonJob",
         function=build_adsorbate,
         name="build_adsorbate",
@@ -185,5 +185,5 @@ def oer_site_workgraph(
     wg.task.new(
         relax_structures,
         name=relax_structures,
-        structures=build_adsorbate_task.outputs["structures"],
+        structures=build_adsorbate_task.outputs.structures,
     )

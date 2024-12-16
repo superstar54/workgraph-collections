@@ -16,14 +16,14 @@ def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
     from .base import emt_calculator
 
     wg = WorkGraph("Atomization energy")
-    pw_atom = wg.tasks.new(
+    pw_atom = wg.add_task(
         "PythonJob", function=emt_calculator, name="scf_atom", atoms=atom
     )
-    pw_mol = wg.tasks.new(
+    pw_mol = wg.add_task(
         "PythonJob", function=emt_calculator, name="scf_mol", atoms=molecule
     )
     # create the task to calculate the atomization energy
-    wg.tasks.new(
+    wg.add_task(
         "PythonJob",
         function=calc_atomization_energy,
         name="calc_atomization_energy",
