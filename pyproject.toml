@@ -25,7 +25,7 @@ classifiers = [
 keywords = ["aiida", "workflows"]
 requires-python = ">=3.9"
 dependencies = [
-    "aiida-workgraph>=0.4.1",
+    "aiida-workgraph @ git+https://github.com/aiidateam/aiida-workgraph.git",
     "ase>=3.23.0",
     "ase-quantumespresso @ git+https://github.com/superstar54/ase-quantumespresso.git",
     "aiida-quantumespresso",

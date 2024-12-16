@@ -23,7 +23,7 @@ def bader_workgraph(
         "current_number_of_bands": None,
     }
     # -------- scf -----------
-    scf_task = wg.tasks.new(
+    scf_task = wg.add_task(
         "PythonJob",
         function=pw_calculator,
         name="scf",
@@ -36,7 +36,7 @@ def bader_workgraph(
     scf_inputs = inputs.get("scf", {})
     scf_task.set(scf_inputs)
     # -------- pp valence -----------
-    pp_valence = wg.tasks.new(
+    pp_valence = wg.add_task(
         "PythonJob",
         function=pp_calculator,
         name="pp_valence",
@@ -57,7 +57,7 @@ def bader_workgraph(
     }
     pp_valence.set(pp_valence_inputs)
     # -------- pp all -----------
-    pp_all = wg.tasks.new(
+    pp_all = wg.add_task(
         "PythonJob",
         function=pp_calculator,
         name="pp_all",
@@ -78,7 +78,7 @@ def bader_workgraph(
     }
     pp_all.set(pp_all_inputs)
     # -------- bader -----------
-    bader_task = wg.tasks.new(
+    bader_task = wg.add_task(
         "PythonJob",
         function=bader_calculator,
         name="bader",

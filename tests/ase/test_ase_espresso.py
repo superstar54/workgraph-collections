@@ -23,7 +23,7 @@ input_data = {
 def test_vibrations(n2_molecule, pseudo_dir, metadata_aiida):
     pseudopotentials = {"N": "N.pbe-n-rrkjus_psl.1.0.0.UPF"}
     wg = WorkGraph("test_vibrations")
-    vibrations_task = wg.tasks.new("PythonJob", name="vibrations", function=vibrations)
+    vibrations_task = wg.add_task("PythonJob", name="vibrations", function=vibrations)
     vibrations_task.set(
         {
             "atoms": n2_molecule,
@@ -43,7 +43,7 @@ def test_atomization_energy(n_atom, n2_molecule, pseudo_dir, metadata_aiida):
     pseudopotentials = {"N": "N.pbe-n-rrkjus_psl.1.0.0.UPF"}
     # ------------------------- Set the inputs -------------------------
     wg = atomization_energy()
-    wg.tasks["scf_atom"].set(
+    wg.tasks.scf_atom.set(
         {
             "atoms": n_atom,
             "pseudopotentials": pseudopotentials,
@@ -53,7 +53,7 @@ def test_atomization_energy(n_atom, n2_molecule, pseudo_dir, metadata_aiida):
             "metadata": metadata_aiida,
         }
     )
-    wg.tasks["scf_mol"].set(
+    wg.tasks.scf_mol.set(
         {
             "atoms": n2_molecule,
             "pseudopotentials": pseudopotentials,
@@ -63,13 +63,13 @@ def test_atomization_energy(n_atom, n2_molecule, pseudo_dir, metadata_aiida):
             "metadata": metadata_aiida,
         }
     )
-    wg.tasks["calc_atomization_energy"].set(
+    wg.tasks.calc_atomization_energy.set(
         {"molecule": n2_molecule, "computer": "localhost"}
     )
-    wg.submit(wait=True, timeout=200)
+    wg.run()
 
     assert np.isclose(
-        wg.tasks["calc_atomization_energy"].outputs["result"].value.value,
+        wg.tasks.calc_atomization_energy.outputs.result.value.value,
         16.24625509874,
     )
 
@@ -92,10 +92,10 @@ def test_eos(bulk_si, pseudo_dir, metadata_aiida):
     )
     # ------------------------- Submit the calculation -------------------
     # wg.run()
-    wg.submit(wait=True, timeout=200)
+    wg.run()
 
     assert np.isclose(
-        wg.tasks["fit_eos"].outputs["result"].value.get_dict()["B"],
+        wg.tasks["fit_eos"].outputs.result.value.get_dict()["B"],
         88.8909406,
         atol=1e-1,
     )

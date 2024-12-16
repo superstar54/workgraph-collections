@@ -28,7 +28,7 @@ def run_scf(
 
     wg = WorkGraph("XPS")
     # run the ground state calculation for the supercell
-    scf_ground = wg.tasks.new(
+    scf_ground = wg.add_task(
         "PythonJob",
         function=pw_calculator,
         name="ground",
@@ -48,11 +48,11 @@ def run_scf(
             "pseudo_dir": pseudo_dir,
         }
     )
-    scf_ground.set_context({"parameters": "scf.ground"})
+    scf_ground.set_context({"scf.ground": "parameters"})
     # remove the original atoms
     marked_atoms.pop("original", None)
     for key, atoms in marked_atoms.items():
-        scf = wg.tasks.new(
+        scf = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name=f"scf_{key}",
@@ -105,7 +105,7 @@ def run_scf(
             }
         )
         # save the output parameters to the context
-        scf.set_context({"parameters": f"scf.{key}"})
+        scf.set_context({f"scf.{key}": "parameters"})
     return wg
 
 
@@ -132,7 +132,7 @@ def xps_workgraph(
     wg = WorkGraph("XPS")
     # -------- relax -----------
     if run_relax:
-        relax_task = wg.tasks.new(
+        relax_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="relax",
@@ -145,7 +145,7 @@ def xps_workgraph(
         relax_task.set(relax_inputs)
         atoms = relax_task.outputs["atoms"]
     # -------- get_marked_atoms -----------
-    marked_atoms_task = wg.tasks.new(
+    marked_atoms_task = wg.add_task(
         "PythonJob",
         function=get_marked_structures,
         name="marked_atoms",
@@ -154,16 +154,16 @@ def xps_workgraph(
     )
     marked_atoms_task.set(marked_structures_inputs)
     # ------------------ run scf -------------------
-    run_scf_task = wg.tasks.new(
+    run_scf_task = wg.add_task(
         run_scf,
         name="run_scf",
-        marked_atoms=marked_atoms_task.outputs["structures"],
+        marked_atoms=marked_atoms_task.outputs.structures,
         core_hole_pseudos=core_hole_pseudos,
         is_molecule=marked_structures_inputs.get("is_molecule", False),
     )
     run_scf_task.set(scf_inputs)
     # -------- calculate binding energy -----------
-    wg.tasks.new(
+    wg.add_task(
         "PythonJob",
         function=get_binding_energy,
         name="get_binding_energy",

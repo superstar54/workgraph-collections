@@ -28,7 +28,7 @@ def run_all_xspectra_prod(
     marked_atoms = marked_atoms.value
     marked_atoms.pop("supercell")
     for key, data in marked_atoms.items():
-        scf_task = wg.tasks.new(
+        scf_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="scf",
@@ -66,9 +66,9 @@ def run_all_xspectra_prod(
                 }
             )
         scf_task.set(scf_inputs)
-        scf_task.set_context({"parameters": f"scf_results.{key}"})
+        scf_task.set_context({f"scf_results.{key}": "parameters"})
         for calc_number, vector in enumerate(eps_vectors):
-            xspectra_task = wg.tasks.new(
+            xspectra_task = wg.add_task(
                 "PythonJob",
                 function=xspectra_calculator,
                 name=f"xspectra_{key}_{calc_number}",
@@ -116,7 +116,7 @@ def xas_workgraph(
     wg = WorkGraph("XAS")
     # -------- relax -----------
     if run_relax:
-        relax_task = wg.tasks.new(
+        relax_task = wg.add_task(
             "PythonJob",
             function=pw_calculator,
             name="relax",
@@ -127,7 +127,7 @@ def xas_workgraph(
         relax_task.set(relax_inputs)
         atoms = relax_task.outputs["atoms"]
     # -------- marked_atoms -----------
-    marked_atoms_task = wg.tasks.new(
+    marked_atoms_task = wg.add_task(
         "PythonJob",
         function=get_non_equivalent_site,
         name="marked_atoms",
@@ -137,17 +137,17 @@ def xas_workgraph(
         metadata=metadata,
     )
     # -------- xspectra -----------
-    wg.tasks.new(
+    wg.add_task(
         run_all_xspectra_prod,
         name="run_all_xspectra_prod",
-        marked_atoms=marked_atoms_task.outputs["result"],
+        marked_atoms=marked_atoms_task.outputs.result,
         commands=commands,
         inputs=inputs,
         eps_vectors=eps_vectors,
         core_hole_pseudos=core_hole_pseudos,
         core_hole_treatment=core_hole_treatment,
     )
-    # wg.tasks.new(
+    # wg.add_task(
     #     binding_energy,
     #     name="binding_energy",
     #     corrections=corrections,

@@ -12,11 +12,11 @@ def wannier90_minimal_workgraph(structure=None, inputs=None):
     wg = WorkGraph("Wannier90_Minimal")
     wg.context = {}
     # -------- scf -----------
-    scf_task = wg.tasks.new(PwCalculation, name="scf", structure=structure)
+    scf_task = wg.add_task(PwCalculation, name="scf", structure=structure)
     scf_inputs = inputs.get("scf", {})
     scf_task.set(scf_inputs)
     # -------- nscf -----------
-    nscf_task = wg.tasks.new(
+    nscf_task = wg.add_task(
         PwCalculation,
         name="nscf",
         structure=structure,
@@ -25,13 +25,13 @@ def wannier90_minimal_workgraph(structure=None, inputs=None):
     nscf_inputs = inputs.get("nscf", {})
     nscf_task.set(nscf_inputs)
     # -------- wannier90_pp -----------
-    wannier90_pp = wg.tasks.new(
+    wannier90_pp = wg.add_task(
         Wannier90Calculation, name="wannier90_pp", structure=structure
     )
     wannier90_pp_inputs = inputs.get("wannier90_pp", {})
     wannier90_pp.set(wannier90_pp_inputs)
     # -------- pw2wannier90 -----------
-    pw2wannier90 = wg.tasks.new(
+    pw2wannier90 = wg.add_task(
         Pw2wannier90Calculation,
         name="pw2wannier90",
         nnkp_file=wannier90_pp.outputs["nnkp_file"],
@@ -40,7 +40,7 @@ def wannier90_minimal_workgraph(structure=None, inputs=None):
     pw2wannier90_inputs = inputs.get("pw2wannier90", {})
     pw2wannier90.set(pw2wannier90_inputs)
     # -------- wannier90 -----------
-    wannier90 = wg.tasks.new(
+    wannier90 = wg.add_task(
         Wannier90Calculation,
         name="wannier90",
         structure=structure,

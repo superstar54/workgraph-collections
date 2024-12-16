@@ -62,7 +62,7 @@ def pdos_workgraph(
     wg = WorkGraph("PDOS")
     # ------- relax -----------
     if run_relax:
-        relax_task = wg.tasks.new(PwRelaxWorkChain, name="relax", structure=structure)
+        relax_task = wg.add_task(PwRelaxWorkChain, name="relax", structure=structure)
         relax_inputs = inputs.get("relax", {})
         relax_inputs.update(
             {
@@ -75,7 +75,7 @@ def pdos_workgraph(
         structure = relax_task.outputs["output_structure"]
     # -------- scf -----------
     if run_scf:
-        scf_task = wg.tasks.new(PwBaseWorkChain, name="scf")
+        scf_task = wg.add_task(PwBaseWorkChain, name="scf")
         scf_inputs = inputs.get("scf", {})
         scf_inputs.update(
             {"pw.structure": structure, "pw.code": pw_code, "pw.pseudos": pseudos}
@@ -83,7 +83,7 @@ def pdos_workgraph(
         scf_task.set(scf_inputs)
         scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- nscf -----------
-    nscf_task = wg.tasks.new(PwBaseWorkChain, name="nscf")
+    nscf_task = wg.add_task(PwBaseWorkChain, name="nscf")
     nscf_inputs = inputs.get("nscf", {})
     nscf_inputs.update(
         {
@@ -95,11 +95,11 @@ def pdos_workgraph(
     )
     nscf_task.set(nscf_inputs)
     # -------- dos -----------
-    dos1 = wg.tasks.new(DosCalculation, name="dos")
+    dos1 = wg.add_task(DosCalculation, name="dos")
     dos_input = inputs.get("dos", {})
     dos_input.update({"code": dos_code})
     dos1.set(dos_input)
-    dos_parameters = wg.tasks.new(
+    dos_parameters = wg.add_task(
         generate_dos_parameters,
         name="dos_parameters",
         parameters=dos_input.get("parameters"),
@@ -108,11 +108,11 @@ def pdos_workgraph(
     wg.links.new(nscf_task.outputs["_outputs"], dos_parameters.inputs["nscf_outputs"])
     wg.links.new(dos_parameters.outputs[0], dos1.inputs["parameters"])
     # -------- projwfc -----------
-    projwfc1 = wg.tasks.new(ProjwfcCalculation, name="projwfc")
+    projwfc1 = wg.add_task(ProjwfcCalculation, name="projwfc")
     projwfc_inputs = inputs.get("projwfc", {})
     projwfc_inputs.update({"code": projwfc_code})
     projwfc1.set(projwfc_inputs)
-    projwfc_parameters = wg.tasks.new(
+    projwfc_parameters = wg.add_task(
         generate_projwfc_parameters,
         name="projwfc_parameters",
         parameters=projwfc_inputs.get("parameters"),

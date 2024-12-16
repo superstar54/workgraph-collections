@@ -26,12 +26,12 @@ def bader_workgraph(
     inputs = {} if inputs is None else inputs
     wg = WorkGraph("BaderCharge")
     # -------- scf -----------
-    scf_task = wg.tasks.new(PwBaseWorkChain, name="scf")
+    scf_task = wg.add_task(PwBaseWorkChain, name="scf")
     scf_inputs = inputs.get("scf", {})
     scf_inputs.update({"pw.structure": structure, "pw.code": pw_code})
     scf_task.set(scf_inputs)
     # -------- pp valence -----------
-    pp_valence = wg.tasks.new(
+    pp_valence = wg.add_task(
         PpCalculation,
         name="pp_valence",
         code=pp_code,
@@ -40,7 +40,7 @@ def bader_workgraph(
     pp_valence_inputs = inputs.get("pp_valence", {})
     pp_valence.set(pp_valence_inputs)
     # -------- pp all -----------
-    pp_all = wg.tasks.new(
+    pp_all = wg.add_task(
         PpCalculation,
         name="pp_all",
         code=pp_code,
@@ -49,7 +49,7 @@ def bader_workgraph(
     pp_all_inputs = inputs.get("pp_all", {})
     pp_all.set(pp_all_inputs)
     # -------- bader -----------
-    bader_task = wg.tasks.new(
+    bader_task = wg.add_task(
         BaderCalculation,
         name="bader",
         code=bader_code,
