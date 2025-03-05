@@ -23,7 +23,9 @@ input_data = {
 def test_vibrations(n2_molecule, pseudo_dir, metadata_aiida):
     pseudopotentials = {"N": "N.pbe-n-rrkjus_psl.1.0.0.UPF"}
     wg = WorkGraph("test_vibrations")
-    vibrations_task = wg.add_task("PythonJob", name="vibrations", function=vibrations)
+    vibrations_task = wg.add_task(
+        "workgraph.pythonjob", name="vibrations", function=vibrations
+    )
     vibrations_task.set(
         {
             "atoms": n2_molecule,
@@ -87,7 +89,7 @@ def test_eos(bulk_si, pseudo_dir, metadata_aiida):
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
         input_data=input_data,
-        kpts=(4, 4, 4),
+        kpts=[4, 4, 4],
         metadata=metadata_aiida,
     )
     # ------------------------- Submit the calculation -------------------

@@ -24,7 +24,7 @@ def pdos_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name="relax",
             atoms=atoms,
@@ -39,7 +39,7 @@ def pdos_workgraph(
     # -------- scf -----------
     if run_scf:
         scf_task = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name="scf",
             atoms=atoms,
@@ -53,7 +53,7 @@ def pdos_workgraph(
         scf_parent_folder = scf_task.outputs["remote_folder"]
     # -------- nscf -----------
     nscf_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=pw_calculator,
         name="nscf",
         atoms=atoms,
@@ -69,7 +69,7 @@ def pdos_workgraph(
     nscf_task.set(nscf_inputs)
     # -------- dos -----------
     dos_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=dos_calculator,
         name="dos",
         command=dos_command,
@@ -82,7 +82,7 @@ def pdos_workgraph(
     dos_task.set(dos_input)
     # -------- projwfc -----------
     projwfc_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=projwfc_calculator,
         name="projwfc",
         command=projwfc_command,

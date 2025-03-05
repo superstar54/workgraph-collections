@@ -29,7 +29,7 @@ def run_scf(
     wg = WorkGraph("XPS")
     # run the ground state calculation for the supercell
     scf_ground = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=pw_calculator,
         name="ground",
         atoms=marked_atoms.pop("supercell"),
@@ -53,7 +53,7 @@ def run_scf(
     marked_atoms.pop("original", None)
     for key, atoms in marked_atoms.items():
         scf = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name=f"scf_{key}",
             atoms=atoms,
@@ -133,7 +133,7 @@ def xps_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name="relax",
             atoms=atoms,
@@ -146,7 +146,7 @@ def xps_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- get_marked_atoms -----------
     marked_atoms_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=get_marked_structures,
         name="marked_atoms",
         atoms=atoms,
@@ -164,7 +164,7 @@ def xps_workgraph(
     run_scf_task.set(scf_inputs)
     # -------- calculate binding energy -----------
     wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=get_binding_energy,
         name="get_binding_energy",
         core_hole_pseudos=core_hole_pseudos,

@@ -39,7 +39,7 @@ def run_relaxation(
     # that's why I put the deformed_structure in the context, so that we can link them
     for i in range(len(deformed_atoms)):
         relax = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name=f"relax_{i}",
             atoms=deformed_atoms[i],
@@ -127,7 +127,7 @@ def elastic_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name="relax",
             atoms=atoms,
@@ -148,7 +148,7 @@ def elastic_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- deformed_structure -----------
     deformed_structure_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=get_deformed_structure_set,
         name="deformed_structure",
         atoms=atoms,
@@ -175,7 +175,7 @@ def elastic_workgraph(
     )
     # -------- fit_elastic -----------
     wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=fit_elastic_constants,
         name="fit_elastic",
         atoms=atoms,

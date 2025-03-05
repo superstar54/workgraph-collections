@@ -24,7 +24,7 @@ def bader_workgraph(
     }
     # -------- scf -----------
     scf_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=pw_calculator,
         name="scf",
         atoms=atoms,
@@ -37,7 +37,7 @@ def bader_workgraph(
     scf_task.set(scf_inputs)
     # -------- pp valence -----------
     pp_valence = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=pp_calculator,
         name="pp_valence",
         command=pp_command,
@@ -58,7 +58,7 @@ def bader_workgraph(
     pp_valence.set(pp_valence_inputs)
     # -------- pp all -----------
     pp_all = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=pp_calculator,
         name="pp_all",
         command=pp_command,
@@ -79,7 +79,7 @@ def bader_workgraph(
     pp_all.set(pp_all_inputs)
     # -------- bader -----------
     bader_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=bader_calculator,
         name="bader",
         computer=computer,

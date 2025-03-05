@@ -79,7 +79,11 @@ def create_supercell(atoms, min_cell_length, is_molecule):
 
 @task(
     outputs=[
-        {"name": "structures", "identifier": "workgraph.namespace"},
+        {
+            "name": "structures",
+            "identifier": "workgraph.namespace",
+            "metadata": {"dynamic": True},
+        },
     ]
 )
 def get_marked_structures(

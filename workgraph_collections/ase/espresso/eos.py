@@ -12,7 +12,10 @@ def all_scf(scaled_atoms, scf_inputs):
     wg = WorkGraph()
     for key, atoms in scaled_atoms.items():
         scf = wg.add_task(
-            "PythonJob", function=pw_calculator, name=f"scf_{key}", atoms=atoms
+            "workgraph.pythonjob",
+            function=pw_calculator,
+            name=f"scf_{key}",
+            atoms=atoms,
         )
         scf.set(scf_inputs)
         # save the output parameters to the context
@@ -47,7 +50,7 @@ def eos_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name="relax",
             atoms=atoms,
@@ -69,7 +72,7 @@ def eos_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- scale_atoms -----------
     scale_atoms_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=generate_scaled_atoms,
         name="scale_atoms",
         atoms=atoms,
@@ -94,7 +97,7 @@ def eos_workgraph(
     )
     # -------- fit_eos -----------
     wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=fit_eos,
         name="fit_eos",
         volumes=scale_atoms_task.outputs["volumes"],

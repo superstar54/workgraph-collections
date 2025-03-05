@@ -22,15 +22,23 @@ def relax_structures(slabs, inputs):
         )
         scf.set(inputs)
         scf.set_context(
-            {"parameters": f"parameters.{key}", "atoms": f"structures.{key}"}
+            {f"parameters.{key}": "parameters", f"structures.{key}": "atoms"}
         )
     return wg
 
 
 @task.pythonjob(
     inputs=[
-        {"name": "slab_parameters", "identifier": "workgraph.namespace"},
-        {"name": "slab_structures", "identifier": "workgraph.namespace"},
+        {
+            "name": "slab_parameters",
+            "identifier": "workgraph.namespace",
+            "metadata": {"dynamic": True},
+        },
+        {
+            "name": "slab_structures",
+            "identifier": "workgraph.namespace",
+            "metadata": {"dynamic": True},
+        },
     ]
 )
 def get_surface_energy(
