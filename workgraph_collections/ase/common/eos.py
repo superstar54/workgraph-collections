@@ -24,7 +24,15 @@ def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
     return {"scaled_atoms": scaled_atoms, "volumes": volumes}
 
 
-@task()
+@task(
+    inputs=[
+        {
+            "name": "scf_results",
+            "identifier": "workgraph.namespace",
+            "metadata": {"dynamic": True},
+        }
+    ]
+)
 def fit_eos(volumes: dict, scf_results: dict) -> dict:
     """Fit the EOS of the data."""
     from ase.eos import EquationOfState

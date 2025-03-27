@@ -1,26 +1,6 @@
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task, WorkGraph, active_map_zone
 from workgraph_collections.ase.common.eos import generate_scaled_atoms, fit_eos
 from ase import Atoms
-
-
-@task.graph_builder(outputs=[{"name": "scf_results", "from": "context.results"}])
-def all_scf(scaled_atoms, scf_inputs):
-    """Run the scf calculation for each atoms."""
-    from aiida_workgraph import WorkGraph
-    from .pw import pw_calculator
-
-    wg = WorkGraph()
-    for key, atoms in scaled_atoms.items():
-        scf = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name=f"scf_{key}",
-            atoms=atoms,
-        )
-        scf.set(scf_inputs)
-        # save the output parameters to the context
-        scf.set_context({f"results.{key}": "parameters"})
-    return wg
 
 
 @task.graph_builder(outputs=[{"name": "result", "from": "fit_eos.result"}])
@@ -46,63 +26,39 @@ def eos_workgraph(
 
     input_data = input_data or {}
 
-    wg = WorkGraph("EOS")
-    # -------- relax -----------
-    if run_relax:
-        relax_task = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name="relax",
-            atoms=atoms,
-            metadata=metadata,
-            computer=computer,
+    with WorkGraph("EOS") as wg:
+        # -------- relax -----------
+        if run_relax:
+            relax_input_data = deepcopy(input_data)
+            relax_input_data.setdefault("CONTROL", {})
+            relax_input_data["CONTROL"]["calculation"] = "vc-relax"
+            relax_output = pw_calculator(
+                atoms=atoms,
+                metadata=metadata,
+                computer=computer,
+                command=command,
+                input_data=relax_input_data,
+                kpts=kpts,
+                pseudopotentials=pseudopotentials,
+                pseudo_dir=pseudo_dir,
+            )
+            atoms = relax_output.atoms
+        # -------- scale_atoms -----------
+        scale_output = generate_scaled_atoms(atoms=atoms, scales=scales)
+        with active_map_zone(scale_output.scaled_atoms) as map_zone:
+            scf_output = pw_calculator(
+                atoms=map_zone.item,
+                command=command,
+                input_data=input_data,
+                kpts=kpts,
+                pseudopotentials=pseudopotentials,
+                pseudo_dir=pseudo_dir,
+                metadata=metadata,
+                computer=computer,
+            )
+        # -------- fit_eos -----------
+        fit_eos(
+            volumes=scale_output.volumes,
+            scf_results=scf_output.parameters,
         )
-        relax_input_data = deepcopy(input_data)
-        relax_input_data.setdefault("CONTROL", {})
-        relax_input_data["CONTROL"]["calculation"] = "vc-relax"
-        relax_task.set(
-            {
-                "command": command,
-                "input_data": relax_input_data,
-                "kpts": kpts,
-                "pseudopotentials": pseudopotentials,
-                "pseudo_dir": pseudo_dir,
-            }
-        )
-        atoms = relax_task.outputs["atoms"]
-    # -------- scale_atoms -----------
-    scale_atoms_task = wg.add_task(
-        "workgraph.pythonjob",
-        function=generate_scaled_atoms,
-        name="scale_atoms",
-        atoms=atoms,
-        scales=scales,
-        computer=computer,
-        metadata=metadata,
-    )
-    # -------- all_scf -----------
-    all_scf1 = wg.add_task(
-        all_scf,
-        name="all_scf",
-        scaled_atoms=scale_atoms_task.outputs["scaled_atoms"],
-        scf_inputs={
-            "command": command,
-            "input_data": input_data,
-            "kpts": kpts,
-            "pseudopotentials": pseudopotentials,
-            "pseudo_dir": pseudo_dir,
-            "metadata": metadata,
-            "computer": computer,
-        },
-    )
-    # -------- fit_eos -----------
-    wg.add_task(
-        "workgraph.pythonjob",
-        function=fit_eos,
-        name="fit_eos",
-        volumes=scale_atoms_task.outputs["volumes"],
-        scf_results=all_scf1.outputs["scf_results"],
-        computer=computer,
-        metadata=metadata,
-    )
-    return wg
+        return wg
