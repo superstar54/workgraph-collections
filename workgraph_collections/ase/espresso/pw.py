@@ -182,7 +182,7 @@ def pw_calculator(
 
     # Set the output directory
     input_data.setdefault("CONTROL", {})
-    # input_data["CONTROL"]["outdir"] = "out"
+    input_data["CONTROL"]["outdir"] = "out"
 
     calc = Espresso(
         profile=profile,
