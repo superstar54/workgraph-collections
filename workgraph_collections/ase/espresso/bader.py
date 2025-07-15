@@ -4,7 +4,7 @@ from .pw import pw_calculator, pp_calculator
 from workgraph_collections.bader import bader_calculator
 
 
-@task.graph_builder()
+@task.graph()
 def bader_workgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",

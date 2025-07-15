@@ -8,9 +8,7 @@ def calc_atomization_energy(molecule, molecule_output, atom_output):
     return energy
 
 
-@task.graph_builder(
-    outputs=[{"name": "result", "from": "calc_atomization_energy.result"}]
-)
+@task.graph(outputs=[{"name": "result", "from": "calc_atomization_energy.result"}])
 def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
     """Workgraph for atomization energy calculation using Espresso calculator."""
 

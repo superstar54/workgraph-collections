@@ -115,7 +115,7 @@ def relax_workgraph(
     return tree
 
 
-@task.graph_builder()
+@task.graph()
 def relax_scf_workgraph(
     structure=None, inputs=None, max_iterations=5, volume_threshold=0.1
 ):

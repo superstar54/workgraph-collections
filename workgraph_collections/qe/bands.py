@@ -51,7 +51,7 @@ def update_bands_parameters(parameters, scf_parameters, nbands_factor=None):
     return orm.Dict(parameters)
 
 
-@task.graph_builder()
+@task.graph()
 def bands_workgraph(
     structure: orm.StructureData = None,
     code: orm.Code = None,

@@ -6,7 +6,7 @@ from ase import Atoms
 from workgraph_collections.ase.espresso.base import pw_calculator
 
 
-@task.graph_builder(
+@task.graph(
     outputs=[["context.scf_results", "scf"], ["context.xspectra_results", "xspectra"]]
 )
 def run_all_xspectra_prod(
@@ -91,7 +91,7 @@ def run_all_xspectra_prod(
     return wg
 
 
-@task.graph_builder(outputs=[{"name": "result", "from": "binding_energy.result"}])
+@task.graph(outputs=[{"name": "result", "from": "binding_energy.result"}])
 def xas_workgraph(
     atoms: Atoms = None,
     commands: dict = None,

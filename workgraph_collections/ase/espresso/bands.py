@@ -15,7 +15,7 @@ def find_kpoint_path(
     return kpts
 
 
-@task.graph_builder()
+@task.graph()
 def bands_workgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",

@@ -9,7 +9,7 @@ def calc_correction(ground_output, core_hole_output):
     return energy
 
 
-@task.graph_builder(outputs=[{"name": "result", "from": "calc_correction.result"}])
+@task.graph(outputs=[{"name": "result", "from": "calc_correction.result"}])
 def core_hole_pseudo_workgraph(
     ground_inputs: dict = None,
     core_hole_inputs: dict = None,

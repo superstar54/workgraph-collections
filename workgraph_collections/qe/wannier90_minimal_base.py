@@ -6,7 +6,7 @@ from aiida_wannier90_workflows.workflows.base.pw2wannier90 import (
 from aiida_wannier90_workflows.workflows.base.wannier90 import Wannier90BaseWorkChain
 
 
-@task.graph_builder()
+@task.graph()
 def wannier90_minimal_base_workgraph(structure=None, inputs=None):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs

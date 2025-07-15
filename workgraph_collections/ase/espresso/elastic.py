@@ -22,7 +22,7 @@ def get_deformed_structure_set(
     return deformed_structure_set
 
 
-@task.graph_builder(outputs=[{"name": "relax_results", "from": "context.results"}])
+@task.graph(outputs=[{"name": "relax_results", "from": "context.results"}])
 def run_relaxation(
     deformed_structure_set: DeformedStructureSet, relax_inputs: dict
 ) -> WorkGraph:
@@ -98,7 +98,7 @@ def fit_elastic_constants(
     return elastic_constants
 
 
-@task.graph_builder(outputs=[{"name": "result", "from": "fit_elastic.result"}])
+@task.graph(outputs=[{"name": "result", "from": "fit_elastic.result"}])
 def elastic_workgraph(
     atoms: Atoms = None,
     command: str = "pw.x",
