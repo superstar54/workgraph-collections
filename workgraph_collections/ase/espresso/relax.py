@@ -41,7 +41,7 @@ def inspect_relax(
     return results
 
 
-@task.graph_builder(
+@task.graph(
     outputs=[
         {"name": "atoms", "from": "relax.atoms"},
         {"name": "parameters", "from": "context.parameters"},

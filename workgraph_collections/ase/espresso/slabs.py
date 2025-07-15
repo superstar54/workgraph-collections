@@ -4,7 +4,7 @@ from ase import Atoms
 from typing import List, Dict
 
 
-@task.graph_builder(
+@task.graph(
     outputs=[
         {"name": "parameters", "from": "context.parameters"},
         {"name": "structures", "from": "context.structures"},
@@ -71,7 +71,7 @@ def get_surface_energy(
     return surface_energies
 
 
-@task.graph_builder(
+@task.graph(
     outputs=[
         {"name": "parameters", "from": "relax_slabs.parameters"},
         {"name": "structures", "from": "relax_slabs.structures"},

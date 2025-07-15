@@ -55,7 +55,7 @@ def prepare_wannier90_pp_inputs(
     return orm.Dict(parameters)
 
 
-@task.graph_builder()
+@task.graph()
 def wannier90_bands_workgraph(
     structure: orm.StructureData = None,
     codes: dict = None,

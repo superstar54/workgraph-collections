@@ -5,7 +5,7 @@ from .base import dos_calculator, projwfc_calculator
 from aiida import orm
 
 
-@task.graph_builder()
+@task.graph()
 def pdos_workgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",

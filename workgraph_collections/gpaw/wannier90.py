@@ -29,7 +29,7 @@ def wannier90(
     os.system(f"{binary} " + seed)
 
 
-@task.graph_builder()
+@task.graph()
 def wannier90_workgraph(
     atoms: Atoms = None,
 ):

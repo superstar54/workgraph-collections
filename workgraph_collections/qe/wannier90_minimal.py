@@ -4,7 +4,7 @@ from aiida_quantumespresso.calculations.pw2wannier90 import Pw2wannier90Calculat
 from aiida_wannier90.calculations.wannier90 import Wannier90Calculation
 
 
-@task.graph_builder()
+@task.graph()
 def wannier90_minimal_workgraph(structure=None, inputs=None):
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs

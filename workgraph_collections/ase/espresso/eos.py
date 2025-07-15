@@ -3,7 +3,7 @@ from workgraph_collections.ase.common.eos import generate_scaled_atoms, fit_eos
 from ase import Atoms
 
 
-@task.graph_builder(outputs=[{"name": "result", "from": "fit_eos.result"}])
+@task.graph(outputs=[{"name": "result", "from": "fit_eos.result"}])
 def eos_workgraph(
     atoms: Atoms = None,
     command: str = "pw.x",

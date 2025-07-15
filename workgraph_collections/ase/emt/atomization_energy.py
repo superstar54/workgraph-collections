@@ -8,9 +8,7 @@ def calc_atomization_energy(molecule: Atoms, molecule_output: dict, atom_output:
     return energy
 
 
-@task.graph_builder(
-    outputs=[{"name": "result", "from": "calc_atomization_energy.result"}]
-)
+@task.graph(outputs=[{"name": "result", "from": "calc_atomization_energy.result"}])
 def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
     """Workgraph for atomization energy calculation using EMT calculator."""
     from .base import emt_calculator
