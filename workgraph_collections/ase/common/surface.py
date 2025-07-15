@@ -30,7 +30,15 @@ def get_slab_from_miller_indices_ase(
     return slab
 
 
-@task.pythonjob(outputs=[{"name": "slabs", "identifier": "workgraph.namespace"}])
+@task.pythonjob(
+    outputs=[
+        {
+            "name": "slabs",
+            "identifier": "workgraph.namespace",
+            "metadata": {"dynamic": True},
+        }
+    ]
+)
 def get_slabs_from_miller_indices_ase(
     atoms: Atoms,
     indices: List[List[int]],
@@ -92,7 +100,15 @@ def get_slab_from_miller_indices_pymatgen(
     return slabs_with_info
 
 
-@task.pythonjob(outputs=[{"name": "structures", "identifier": "workgraph.namespace"}])
+@task.pythonjob(
+    outputs=[
+        {
+            "name": "structures",
+            "identifier": "workgraph.namespace",
+            "metadata": {"dynamic": True},
+        }
+    ]
+)
 def get_adsorption_structure(
     slab: Atoms,
     adsorbate: Atoms,

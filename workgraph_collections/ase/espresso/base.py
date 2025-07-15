@@ -2,7 +2,7 @@ from aiida_workgraph import task
 from ase import Atoms
 
 
-@task(outputs=[{"name": "parameters"}, {"name": "dos"}])
+@task.pythonjob(outputs=[{"name": "parameters"}, {"name": "dos"}])
 def dos_calculator(
     command: str = "dos.x",
     input_data: dict = None,
@@ -22,7 +22,7 @@ def dos_calculator(
     return calc.results
 
 
-@task(
+@task.pythonjob(
     outputs=[
         {"name": "parameters"},
         {"name": "dos"},
@@ -50,7 +50,7 @@ def projwfc_calculator(
     return calc.results
 
 
-@task(outputs=[{"name": "results"}])
+@task.pythonjob(outputs=[{"name": "results"}])
 def pp_calculator(
     command: str = "pp.x",
     input_data: dict = None,
@@ -71,7 +71,7 @@ def pp_calculator(
     return {"results": results}
 
 
-@task(outputs=[{"name": "results"}])
+@task.pythonjob(outputs=[{"name": "results"}])
 def xspectra_calculator(
     command: str = "xspectra.x",
     input_data: dict = None,
@@ -100,7 +100,7 @@ def xspectra_calculator(
     return {"results": results}
 
 
-@task(outputs=[{"name": "results"}])
+@task.pythonjob(outputs=[{"name": "results"}])
 def vibrations(
     atoms: Atoms,
     pseudopotentials: dict,
@@ -149,7 +149,7 @@ def vibrations(
     return {"energies": energies}
 
 
-@task(
+@task.pythonjob(
     outputs=[
         {"name": "parameters"},
         {"name": "ld1"},

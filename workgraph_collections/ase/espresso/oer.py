@@ -7,7 +7,15 @@ molecule_energies = {
 }
 
 
-@task(outputs=[{"name": "structures", "identifier": "workgraph.namespace"}])
+@task(
+    outputs=[
+        {
+            "name": "structures",
+            "identifier": "workgraph.namespace",
+            "metadata": {"dynamic": True},
+        }
+    ]
+)
 def build_adsorbate(atoms, site, site_symbol, site_position, mols):
     """
     Add O*, OH* and OOH*, and relax the structure
@@ -79,7 +87,7 @@ def relax_structures(structures, pw_inputs):
     wg = WorkGraph()
     for key, atoms in structures.items():
         scf = wg.add_task(
-            "PythonJob", function=pw_calculator, name=f"pw_{key}", atoms=atoms
+            "workgraph.pythonjob", function=pw_calculator, name=f"pw_{key}", atoms=atoms
         )
         scf.set(pw_inputs)
         # save the output parameters to the context
@@ -173,7 +181,7 @@ def oer_site_workgraph(
 
     wg = WorkGraph("OER")
     build_adsorbate_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=build_adsorbate,
         name="build_adsorbate",
         atoms=atoms,

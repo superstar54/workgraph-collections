@@ -36,13 +36,13 @@ def wannier90_workgraph(
     """Workgraph for Wannier90 calculation."""
     wg = WorkGraph("Wannier90")
     scf_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=gpaw_calculator,
         name="scf",
         atoms=atoms,
     )
     wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=wannier90,
         name="wannier90",
         parent_folder=scf_task.outputs["remote_folder"],

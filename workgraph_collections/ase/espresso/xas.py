@@ -29,7 +29,7 @@ def run_all_xspectra_prod(
     marked_atoms.pop("supercell")
     for key, data in marked_atoms.items():
         scf_task = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name="scf",
             command=commands["pw"],
@@ -69,7 +69,7 @@ def run_all_xspectra_prod(
         scf_task.set_context({f"scf_results.{key}": "parameters"})
         for calc_number, vector in enumerate(eps_vectors):
             xspectra_task = wg.add_task(
-                "PythonJob",
+                "workgraph.pythonjob",
                 function=xspectra_calculator,
                 name=f"xspectra_{key}_{calc_number}",
                 command=commands["xspectra"],
@@ -117,7 +117,7 @@ def xas_workgraph(
     # -------- relax -----------
     if run_relax:
         relax_task = wg.add_task(
-            "PythonJob",
+            "workgraph.pythonjob",
             function=pw_calculator,
             name="relax",
             atoms=atoms,
@@ -128,7 +128,7 @@ def xas_workgraph(
         atoms = relax_task.outputs["atoms"]
     # -------- marked_atoms -----------
     marked_atoms_task = wg.add_task(
-        "PythonJob",
+        "workgraph.pythonjob",
         function=get_non_equivalent_site,
         name="marked_atoms",
         atoms=atoms,

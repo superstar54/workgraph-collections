@@ -1,7 +1,7 @@
 ---
 label: python
 description: Python code
-default_calc_job_plugin: workgraph.python
+default_calc_job_plugin: pythonjob.pythonjob
 computer: localhost
 prepend_text: ' '
 append_text: ' '
