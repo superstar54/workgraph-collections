@@ -1,4 +1,4 @@
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task, dynamic
 from workgraph_collections.ase.common.core_level import (
     get_marked_structures,
     get_binding_energy,
@@ -8,7 +8,7 @@ from ase import Atoms
 from copy import deepcopy
 
 
-@task.graph(outputs=[{"name": "results", "from": "context.scf"}])
+@task.graph(outputs=dynamic(dict))
 def run_scf(
     marked_atoms: dict,
     command: str = None,
@@ -21,45 +21,33 @@ def run_scf(
     core_hole_treatment: str = "XCH_SMEAR",
     is_molecule: bool = None,
     metadata: dict = None,
-) -> WorkGraph:
+) -> dict:
     """Run the scf calculation for each atoms."""
-    from aiida_workgraph import WorkGraph
     from .pw import pw_calculator
 
-    wg = WorkGraph("XPS")
+    results = {}
+
     # run the ground state calculation for the supercell
-    scf_ground = wg.add_task(
-        "workgraph.pythonjob",
-        function=pw_calculator,
-        name="ground",
-        atoms=marked_atoms.pop("supercell"),
-        computer=computer,
-        metadata=metadata,
-    )
     # update pseudopotentials using ground state pseudopotentials
     for key, value in core_hole_pseudos.items():
         pseudopotentials[key] = value["ground"]
-    scf_ground.set(
-        {
-            "command": command,
-            "input_data": input_data,
-            "kpts": kpts,
-            "pseudopotentials": pseudopotentials,
-            "pseudo_dir": pseudo_dir,
-        }
+    scf_ground_inputs = {
+        "command": command,
+        "input_data": input_data,
+        "kpts": kpts,
+        "pseudopotentials": pseudopotentials,
+        "pseudo_dir": pseudo_dir,
+    }
+    scf_ground = pw_calculator(
+        atoms=marked_atoms.pop("supercell"),
+        computer=computer,
+        metadata=metadata,
+        **scf_ground_inputs
     )
-    scf_ground.set_context({"scf.ground": "parameters"})
+    results["ground"] = scf_ground.parameters
     # remove the original atoms
     marked_atoms.pop("original", None)
     for key, atoms in marked_atoms.items():
-        scf = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name=f"scf_{key}",
-            atoms=atoms,
-            computer=computer,
-            metadata=metadata,
-        )
         # update pseudopotentials based on marked atoms
         # split key by last underscore
         label, _index = key.rsplit("_", 1)
@@ -95,22 +83,23 @@ def run_scf(
                     "tot_charge": 1,
                 }
             )
-        scf.set(
-            {
-                "command": command,
-                "input_data": input_data,
-                "kpts": kpts,
-                "pseudopotentials": pseudopotentials,
-                "pseudo_dir": pseudo_dir,
-            }
+        scf_inputs = {
+            "command": command,
+            "input_data": input_data,
+            "kpts": kpts,
+            "pseudopotentials": pseudopotentials,
+            "pseudo_dir": pseudo_dir,
+        }
+        scf_out = pw_calculator(
+            atoms=atoms, computer=computer, metadata=metadata, **scf_inputs
         )
         # save the output parameters to the context
-        scf.set_context({f"scf.{key}": "parameters"})
-    return wg
+        results[key] = scf_out.parameters
+    return results
 
 
 @task.graph(outputs=[{"name": "result", "from": "binding_energy.result"}])
-def xps_workgraph(
+def XpsWorkgraph(
     atoms: Atoms = None,
     scf_inputs: str = None,
     marked_structures_inputs: dict = None,
@@ -129,46 +118,30 @@ def xps_workgraph(
     scf_inputs = scf_inputs or {}
     marked_structures_inputs = marked_structures_inputs or {}
 
-    wg = WorkGraph("XPS")
     # -------- relax -----------
     if run_relax:
-        relax_task = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name="relax",
-            atoms=atoms,
-        )
+
         relax_inputs = deepcopy(scf_inputs)
         input_data = Namelist(relax_inputs.get("input_data", {})).to_nested(binary="pw")
         input_data["CONTROL"]["calculation"] = "relax"
         relax_inputs["input_data"] = input_data
-        relax_task.set(relax_inputs)
-        atoms = relax_task.outputs["atoms"]
+        relax_out = pw_calculator(name="relax", atoms=atoms, **relax_inputs)
+        atoms = relax_out.atoms
     # -------- get_marked_atoms -----------
-    marked_atoms_task = wg.add_task(
-        "workgraph.pythonjob",
-        function=get_marked_structures,
-        name="marked_atoms",
-        atoms=atoms,
-        metadata=metadata,
+    marked_atoms_out = get_marked_structures(
+        name="marked_atoms", atoms=atoms, **marked_structures_inputs
     )
-    marked_atoms_task.set(marked_structures_inputs)
     # ------------------ run scf -------------------
-    run_scf_task = wg.add_task(
-        run_scf,
-        name="run_scf",
-        marked_atoms=marked_atoms_task.outputs.structures,
+    run_scf_out = run_scf(
+        marked_atoms=marked_atoms_out.structures,
         core_hole_pseudos=core_hole_pseudos,
         is_molecule=marked_structures_inputs.get("is_molecule", False),
-    )
-    run_scf_task.set(scf_inputs)
-    # -------- calculate binding energy -----------
-    wg.add_task(
-        "workgraph.pythonjob",
-        function=get_binding_energy,
-        name="get_binding_energy",
-        core_hole_pseudos=core_hole_pseudos,
-        scf_outputs=run_scf_task.outputs["results"],
         metadata=metadata,
+        **scf_inputs
     )
-    return wg
+    # -------- calculate binding energy -----------
+    binding_energy = get_binding_energy(
+        core_hole_pseudos=core_hole_pseudos,
+        scf_outputs=run_scf_out.results,
+    )
+    return binding_energy.result

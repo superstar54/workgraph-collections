@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
 """PdosWorkGraph."""
 
 from aiida import orm
-from aiida_workgraph import task
+from aiida_workgraph import task, spec
 from workgraph_collections.qe import PwBaseTask, PwRelaxTask, DosTask, ProjwfcTask
+from typing import Annotated
 
 
-@task()
-def generate_dos_parameters(nscf_outputs, parameters=None):
+@task.calcfunction()
+def generate_dos_parameters(output_band, output_parameters, parameters=None):
     """Generate DOS parameters from NSCF calculation."""
-    nscf_emin = nscf_outputs.output_band.get_array("bands").min()
-    nscf_emax = nscf_outputs.output_band.get_array("bands").max()
-    nscf_fermi = nscf_outputs.output_parameters.dict.fermi_energy
+    nscf_emin = output_band.get_array("bands").min()
+    nscf_emax = output_band.get_array("bands").max()
+    nscf_fermi = output_parameters.dict.fermi_energy
     paras = {} if parameters is None else parameters.get_dict()
     paras.setdefault("DOS", {})
     if paras.pop("align_to_fermi", False):
@@ -21,12 +21,12 @@ def generate_dos_parameters(nscf_outputs, parameters=None):
     return orm.Dict(paras)
 
 
-@task()
-def generate_projwfc_parameters(nscf_outputs, parameters=None):
+@task.calcfunction()
+def generate_projwfc_parameters(output_band, output_parameters, parameters=None):
     """Generate PROJWFC parameters from NSCF calculation."""
-    nscf_emin = nscf_outputs.output_band.get_array("bands").min()
-    nscf_emax = nscf_outputs.output_band.get_array("bands").max()
-    nscf_fermi = nscf_outputs.output_parameters.dict.fermi_energy
+    nscf_emin = output_band.get_array("bands").min()
+    nscf_emax = output_band.get_array("bands").max()
+    nscf_fermi = output_parameters.dict.fermi_energy
     paras = {} if parameters is None else parameters.get_dict()
     paras.setdefault("PROJWFC", {})
     if paras.pop("align_to_fermi", False):
@@ -36,19 +36,28 @@ def generate_projwfc_parameters(nscf_outputs, parameters=None):
 
 
 @task.graph(
-    outputs=[
-        {"name": "dos", "identifier": "workgraph.namespace"},
-        {"name": "projwfc", "identifier": "workgraph.namespace"},
-    ]
+    outputs=spec.namespace(
+        dos=DosTask.outputs,
+        projwfc=ProjwfcTask.outputs,
+    ),
 )
-def pdos_workgraph(
+def PdosWorkGraph(
     structure: orm.StructureData = None,
     pw_code: orm.Code = None,
     dos_code: orm.Code = None,
     projwfc_code: orm.Code = None,
-    inputs: dict = None,
+    inputs: Annotated[
+        dict,
+        spec.namespace(
+            relax=PwRelaxTask.inputs,
+            scf=PwBaseTask.inputs,
+            nscf=PwBaseTask.inputs,
+            dos=DosTask.inputs,
+            projwfc=ProjwfcTask.inputs,
+        ),
+    ] = None,
     pseudo_family: str = None,
-    pseudos: dict = None,
+    pseudos: Annotated[dict, spec.dynamic(orm.UpfData)] = None,
     scf_parent_folder: orm.RemoteData = None,
     run_scf: bool = False,
     run_relax: bool = False,
@@ -95,13 +104,13 @@ def pdos_workgraph(
     dos_input = inputs.get("dos", {})
     dos_input.update({"code": dos_code})
     dos_parameters_outs = generate_dos_parameters(
-        name="dos_parameters",
+        output_band=nscf_outs.output_band,
+        output_parameters=nscf_outs.output_parameters,
         parameters=dos_input.pop("parameters", {}),
     )
     dos_input.update(
         {
             "parent_folder": nscf_outs.remote_folder,
-            "nscf_outputs": nscf_outs._outputs,
             "parameters": dos_parameters_outs.result,
         }
     )
@@ -110,13 +119,13 @@ def pdos_workgraph(
     projwfc_inputs = inputs.get("projwfc", {})
     projwfc_inputs.update({"code": projwfc_code})
     projwfc_parameters_outs = generate_projwfc_parameters(
-        name="projwfc_parameters",
+        output_band=nscf_outs.output_band,
+        output_parameters=nscf_outs.output_parameters,
         parameters=projwfc_inputs.pop("parameters", {}),
     )
     projwfc_inputs.update(
         {
             "parent_folder": nscf_outs.remote_folder,
-            "nscf_outputs": nscf_outs._outputs,
             "parameters": projwfc_parameters_outs.result,
         }
     )

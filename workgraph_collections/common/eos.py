@@ -1,10 +1,13 @@
 from aiida import orm
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task, spec
+from typing import Annotated, Any
 
 
 # explicitly define the output socket name to match the return value of the function
-@task.calcfunction(outputs=[{"name": "structures"}, {"name": "volumes"}])
-def scale_structure(structure: orm.StructureData, scales: list):
+@task.calcfunction(
+    outputs=spec.namespace(structures=spec.dynamic(orm.StructureData), volumes=dict)
+)
+def scale_structure(structure: orm.StructureData, scales: list) -> dict:
     """Scale the structure by the given scales."""
     atoms = structure.get_ase()
     volumes = {}
@@ -20,7 +23,9 @@ def scale_structure(structure: orm.StructureData, scales: list):
 
 @task.calcfunction()
 # because this is a calcfunction, and the input scf_outputs are dynamic, we need use **scf_outputs.
-def fit_eos(volumes: dict = None, **scf_outputs):
+def fit_eos(
+    volumes: dict = None, **scf_outputs: Annotated[dict, spec.dynamic(dict)]
+) -> orm.Dict:
     """Fit the EOS of the data."""
     from ase.eos import EquationOfState
     from ase.units import kJ
@@ -44,25 +49,27 @@ def fit_eos(volumes: dict = None, **scf_outputs):
 
 
 # Output result from context to the output socket
-@task.graph(outputs=[{"name": "result", "from": "context.result"}])
-def all_scf(calculator, structures, scf_inputs):
+@task.graph(outputs=spec.namespace(result=spec.dynamic(Any)))
+def all_scf(
+    calculator,
+    structures: Annotated[dict, spec.dynamic(Any)],
+    scf_inputs: Annotated[dict, spec.dynamic(Any)],
+) -> dict:
     """Run the scf calculation for each structure."""
-    from aiida_workgraph import WorkGraph
 
-    wg = WorkGraph()
+    result = {}
     for key, structure in structures.items():
-        scf = wg.add_task(calculator, name=f"scf_{key}", structure=structure)
-        scf.set(scf_inputs)
+        scf_out = calculator(structure=structure, **scf_inputs)
         # save the output parameters to the context
-        scf.set_context({f"result.{key}": "output_parameters"})
-    return wg
+        result[key] = scf_out.output_parameters
+    return result
 
 
-@task.graph(outputs=[{"name": "result", "from": "fit_eos.result"}])
+@task.graph
 def eos_workgraph(
     structure: orm.StructureData = None,
     scales: list = None,
-    scf_inputs: dict = None,
+    scf_inputs: Annotated[dict, spec.dynamic(Any)] = None,
     calculator: callable = None,
 ):
     """Workgraph for EOS calculation.
@@ -70,21 +77,13 @@ def eos_workgraph(
     2. Run the SCF calculation for each scaled structure.
     3. Fit the EOS.
     """
-    wg = WorkGraph("EOS")
-    scale_structure1 = wg.add_task(
-        scale_structure, name="scale_structure", structure=structure, scales=scales
-    )
-    all_scf1 = wg.add_task(
-        all_scf,
-        name="all_scf",
+    scale_structure_out = scale_structure(structure=structure, scales=scales)
+    all_scf_out = all_scf(
         calculator=calculator,
-        structures=scale_structure1.outputs.structures,
+        structures=scale_structure_out.structures,
         scf_inputs=scf_inputs,
     )
-    wg.add_task(
-        fit_eos,
-        name="fit_eos",
-        volumes=scale_structure1.outputs["volumes"],
-        scf_outputs=all_scf1.outputs.result,
-    )
-    return wg
+    return fit_eos(
+        volumes=scale_structure_out.volumes,
+        scf_outputs=all_scf_out.result,
+    ).result

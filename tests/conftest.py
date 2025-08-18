@@ -35,7 +35,7 @@ def metadata_aiida():
         "options": {
             "prepend_text": """
     eval "$(conda shell.posix hook)"
-    conda activate base
+    conda activate aiida
     export OMP_NUM_THREADS=1
             """,
         }

@@ -1,11 +1,11 @@
-from aiida_workgraph import WorkGraph, task
+from aiida_workgraph import task, namespace
 from ase import Atoms
 from .pw import pw_calculator
 from aiida import orm
 
 
 @task()
-def find_kpoint_path(
+def find_kpoints_path(
     atoms: Atoms, path: str = None, npoints: int = None, density: int = None
 ):
     """Find kpoint path for band structure calculation."""
@@ -15,14 +15,18 @@ def find_kpoint_path(
     return kpts
 
 
-@task.graph()
-def bands_workgraph(
+@task.graph(
+    outputs=namespace(
+        bands=pw_calculator.outputs, kpoints_path=find_kpoints_path.outputs.result
+    )
+)
+def BandsWorkgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",
     inputs: dict = None,
     pseudopotentials: dict = None,
     pseudo_dir: str = ".",
-    nkpoints: int = None,
+    npoints: int = None,
     density: int = None,
     kpoints_path: str = None,
     scf_parent_folder: orm.RemoteData = None,
@@ -31,65 +35,45 @@ def bands_workgraph(
 ):
     """Generate BandsStructure WorkGraph."""
     inputs = {} if inputs is None else inputs
-    # create workgraph
-    wg = WorkGraph("BandsStructure")
-    wg.context = {
-        "current_number_of_bands": None,
-    }
-    # -------- relax -----------
     if run_relax:
-        relax_task = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name="relax",
+        relax_inputs = inputs.get("relax", {})
+        relax_task_out = pw_calculator(
             atoms=atoms,
             command=pw_command,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
+            **relax_inputs
         )
-        relax_inputs = inputs.get("relax", {})
-        relax_task.set(relax_inputs)
-        atoms = relax_task.outputs["atoms"]
+        atoms = relax_task_out.atoms
     # -------- scf -----------
     if run_scf:
-        scf_task = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name="scf",
+        scf_inputs = inputs.get("scf", {})
+        scf_task_out = pw_calculator(
             atoms=atoms,
             command=pw_command,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
+            **scf_inputs
         )
-        scf_inputs = inputs.get("scf", {})
-        scf_task.set(scf_inputs)
-        scf_parent_folder = scf_task.outputs["remote_folder"]
+        scf_parent_folder = scf_task_out.remote_folder
     # -------- kpoints path -----------
-    find_kpoints_path_task = wg.add_task(
-        "workgraph.pythonjob",
-        function=find_kpoint_path,
-        name="find_kponits_path",
+    find_kpoints_path_out = find_kpoints_path(
         atoms=atoms,
         path=kpoints_path,
-        npoints=nkpoints,
+        npoints=npoints,
         density=density,
     )
-    find_kpoints_path_inputs = inputs.get("find_kpoints_path", {})
-    find_kpoints_path_task.set(find_kpoints_path_inputs)
     # -------- bands -----------
-    bands_task = wg.add_task(
-        "workgraph.pythonjob",
-        function=pw_calculator,
-        name="bands",
+    bands_inputs = inputs.get("bands", {})
+    bands_task_out = pw_calculator(
         atoms=atoms,
         command=pw_command,
         pseudopotentials=pseudopotentials,
         pseudo_dir=pseudo_dir,
-        kpts=find_kpoints_path_task.outputs.result,
+        kpts=find_kpoints_path_out.result,
         parent_folder=scf_parent_folder,
         parent_output_folder="out",
         parent_folder_name="out",
+        **bands_inputs
     )
-    bands_inputs = inputs.get("bands", {})
-    bands_task.set(bands_inputs)
-    return wg
+    return {"bands": bands_task_out, "kpoints_path": find_kpoints_path_out.result}

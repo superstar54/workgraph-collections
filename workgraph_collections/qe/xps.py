@@ -1,76 +1,65 @@
-from aiida_workgraph import WorkGraph, task, build_task
-from aiida.orm import StructureData, Dict, KpointsData, Code, List, Bool
+from aiida.orm import StructureData, Dict, KpointsData, Code, List, Bool, UpfData
 from workgraph_collections.common.xps import binding_energy
-from aiida_quantumespresso.workflows.functions.get_xspectra_structures import (
+from aiida_qe_xspec.workflows.functions.get_xspectra_structures import (
     get_xspectra_structures,
 )
-from aiida_quantumespresso.workflows.functions.get_marked_structures import (
+from aiida_qe_xspec.workflows.functions.get_marked_structures import (
     get_marked_structures,
 )
+from typing import Annotated
+from aiida_workgraph import task, spec
+from workgraph_collections.qe import PwTask
 
 # add a output socket manually
-GetXspectraStructureTask = build_task(
-    get_xspectra_structures,
-    outputs=[
-        {"name": "output_parameters"},
-        {"name": "marked_structures"},
-    ],
+GetXspectraStructureTask = task(outputs=["output_parameters", "marked_structures"])(
+    get_xspectra_structures
 )
-GetMarkedStructuresTask = build_task(
-    get_marked_structures,
-    outputs=[
-        {"name": "output_parameters"},
-        {"name": "marked_structures"},
-    ],
+GetMarkedStructuresTask = task(outputs=["output_parameters", "marked_structures"])(
+    get_marked_structures
 )
 
 
-@task.graph(outputs=[{"name": "result", "from": "context.scf"}])
+@task.graph(outputs=spec.dynamic(PwTask.outputs.output_parameters))
 def run_scf(
     structure: StructureData = None,
     code: Code = None,
     parameters: dict = None,
     kpoints: KpointsData = None,
-    pseudos: dict = None,
-    core_hole_pseudos: dict = None,
+    pseudos: Annotated[dict, spec.dynamic(UpfData)] = None,
+    core_hole_pseudos: Annotated[dict, spec.dynamic(UpfData)] = None,
     core_hole_treatment: str = "xch",
     is_molecule: bool = None,
     metadata: dict = None,
-    **marked_structures,
+    marked_structures: Annotated[dict, spec.dynamic(StructureData)] = None,
 ):
-    from aiida_workgraph import WorkGraph
-    from aiida_quantumespresso.calculations.pw import PwCalculation
     from copy import deepcopy
 
+    results = {}
     #
     output_parameters = marked_structures.pop("output_parameters", Dict({})).get_dict()
     sites_info = output_parameters["equivalent_sites_data"]
-    print("sites_info", sites_info)
 
     for site in sites_info:
         abs_element = sites_info[site]["symbol"]
         pseudos[abs_element] = core_hole_pseudos["gipaw"][abs_element]
     # ground state
-    wg = WorkGraph("run_scf")
     supercell = marked_structures.pop("supercell", structure)
-    pw_ground = wg.add_task(PwCalculation, name="ground")
-    pw_ground.set(
-        {
-            "code": code,
-            "parameters": parameters,
-            "kpoints": kpoints,
-            "pseudos": pseudos,
-            "metadata": metadata,
-            "structure": supercell,
-        }
-    )
-    pw_ground.set_context({"scf.ground": "output_parameters"})
-    # remove unwanted data
-    marked_structures = marked_structures["marked_structures"]
+    parameters = parameters.get_dict() if isinstance(parameters, Dict) else parameters
+    pw_inputs = {
+        "code": code,
+        "parameters": Dict(parameters),
+        "kpoints": kpoints,
+        "pseudos": pseudos,
+        "metadata": metadata,
+        "structure": supercell,
+    }
+    pw_ground_out = PwTask(**pw_inputs)
+    results["ground"] = pw_ground_out.output_parameters
     # excited state node
-    for key, marked_structure in marked_structures.items():
+    for key, data in sites_info.items():
+        symbol = data["symbol"]
+        marked_structure = marked_structures[f"{key}_{symbol}"]
         pseudos1 = pseudos.copy()
-        symbol = sites_info[key]["symbol"]
         pseudos1["X"] = core_hole_pseudos["core_hole"][symbol]
         # remove pseudo of non-exist element
         pseudos1 = {kind.name: pseudos1[kind.name] for kind in marked_structure.kinds}
@@ -108,34 +97,32 @@ def run_scf(
                     "tot_charge": 1,
                 }
             )
-        pw_excited = wg.add_task(PwCalculation, name=f"pw_excited_{key}")
-        pw_excited.set(
-            {
-                "code": code,
-                "parameters": ch_parameters,
-                "kpoints": kpoints,
-                "pseudos": pseudos1,
-                "metadata": metadata,
-                "structure": marked_structure,
-                "settings": settings,
-            }
-        )
-        pw_excited.set_context({f"scf.{key}": "output_parameters"})
-    return wg
+        pw_inputs = {
+            "code": code,
+            "parameters": Dict(ch_parameters),
+            "kpoints": kpoints,
+            "pseudos": pseudos1,
+            "metadata": metadata,
+            "structure": marked_structure,
+            "settings": settings,
+        }
+        pw_excited_out = PwTask(**pw_inputs)
+        results[key] = pw_excited_out.output_parameters
+    return results
 
 
-@task.graph(outputs=[{"name": "result", "from": "binding_energy.result"}])
-def xps_workgraph(
+@task.graph()
+def XpsWorkgraph(
     structure: StructureData = None,
     code: Code = None,
     atoms_list: list = None,
     element_list: list = None,
     parameters: dict = None,
     kpoints: KpointsData = None,
-    pseudos: dict = None,
+    pseudos: Annotated[dict, spec.dynamic(UpfData)] = None,
     is_molecule: bool = False,
     core_hole_treatment: str = "xch",
-    core_hole_pseudos: dict = None,
+    core_hole_pseudos: Annotated[dict, spec.dynamic(UpfData)] = None,
     correction_energies: dict = None,
     metadata: dict = None,
 ):
@@ -144,27 +131,18 @@ def xps_workgraph(
     2. Run the SCF calculation for ground state, and each marked structure with core hole.
     3. Calculate the binding energy.
     """
-    wg = WorkGraph()
     if atoms_list:
-        structures_task = wg.add_task(
-            GetMarkedStructuresTask,
-            name="marked_structures",
+        structures_task_out = GetMarkedStructuresTask(
             structure=structure,
             atoms_list=atoms_list,
         )
     else:
-        structures_task = wg.add_task(
-            GetXspectraStructureTask,
-            name="marked_structures",
+        structures_task_out = GetXspectraStructureTask(
             structure=structure,
-            kwargs={
-                "absorbing_elements_list": List(element_list),
-                "is_molecule_input": Bool(is_molecule),
-            },
+            absorbing_elements_list=List(element_list),
+            is_molecule_input=Bool(is_molecule),
         )
-    run_scf1 = wg.add_task(
-        run_scf,
-        name="run_scf",
+    run_scf1_out = run_scf(
         structure=structure,
         code=code,
         parameters=parameters,
@@ -174,14 +152,11 @@ def xps_workgraph(
         is_molecule=is_molecule,
         core_hole_treatment=core_hole_treatment,
         metadata=metadata,
-        marked_structures=structures_task.outputs["_outputs"],
+        marked_structures=structures_task_out,
     )
-    wg.add_task(
-        binding_energy,
-        name="binding_energy",
-        sites_info=structures_task.outputs["output_parameters"],
-        scf_outputs=run_scf1.outputs.result,
+    binding_energy_out = binding_energy(
+        sites_info=structures_task_out.output_parameters,
         corrections=correction_energies,
-        energy_units="a.u",
+        scf_outputs=run_scf1_out,
     )
-    return wg
+    return binding_energy_out

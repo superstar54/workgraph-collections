@@ -1,4 +1,4 @@
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task
 
 
 @task()
@@ -9,11 +9,11 @@ def calc_correction(ground_output, core_hole_output):
     return energy
 
 
-@task.graph(outputs=[{"name": "result", "from": "calc_correction.result"}])
+@task.graph()
 def core_hole_pseudo_workgraph(
     ground_inputs: dict = None,
     core_hole_inputs: dict = None,
-) -> WorkGraph:
+) -> float:
     """Workgraph for atomization energy calculation using Espresso calculator."""
 
     from .base import ld1_calculator
@@ -21,23 +21,9 @@ def core_hole_pseudo_workgraph(
     ground_inputs = {} if ground_inputs is None else ground_inputs
     core_hole_inputs = {} if core_hole_inputs is None else core_hole_inputs
 
-    wg = WorkGraph("Core-hole pseudo workgraph")
-    ground_task = wg.add_task(
-        "workgraph.pythonjob",
-        function=ld1_calculator,
-        name="ground",
-    )
-    ground_task.set(ground_inputs)
-    core_hole_task = wg.add_task(
-        "workgraph.pythonjob", function=ld1_calculator, name="core_hole"
-    )
-    core_hole_task.set(core_hole_inputs)
-    # create the task to calculate the atomization energy
-    wg.add_task(
-        "workgraph.pythonjob",
-        function=calc_correction,
-        name="calc_correction",
-        core_hole_output=core_hole_task.outputs["ld1"],
-        ground_output=ground_task.outputs["ld1"],
-    )
-    return wg
+    ground_out = ld1_calculator(**ground_inputs)
+    core_hole_out = ld1_calculator(**core_hole_inputs)
+    return calc_correction(
+        core_hole_output=core_hole_out.ld1,
+        ground_output=ground_out.ld1,
+    ).result

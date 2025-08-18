@@ -1,4 +1,4 @@
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task
 from ase import Atoms
 
 
@@ -8,25 +8,16 @@ def calc_atomization_energy(molecule: Atoms, molecule_output: dict, atom_output:
     return energy
 
 
-@task.graph(outputs=[{"name": "result", "from": "calc_atomization_energy.result"}])
-def atomization_energy(atom: Atoms = None, molecule: Atoms = None):
+@task.graph
+def AtomizationEnergy(
+    atom: Atoms = None, molecule: Atoms = None, metadata: dict = None
+):
     """Workgraph for atomization energy calculation using EMT calculator."""
     from .base import emt_calculator
 
-    wg = WorkGraph("Atomization energy")
-    pw_atom = wg.add_task(
-        "workgraph.pythonjob", function=emt_calculator, name="scf_atom", atoms=atom
-    )
-    pw_mol = wg.add_task(
-        "workgraph.pythonjob", function=emt_calculator, name="scf_mol", atoms=molecule
-    )
+    pw_atom_out = emt_calculator(atoms=atom, metadata=metadata).result
+    pw_mol_out = emt_calculator(atoms=molecule, metadata=metadata).result
     # create the task to calculate the atomization energy
-    wg.add_task(
-        "workgraph.pythonjob",
-        function=calc_atomization_energy,
-        name="calc_atomization_energy",
-        molecule=molecule,
-        atom_output=pw_atom.outputs["results"],
-        molecule_output=pw_mol.outputs["results"],
-    )
-    return wg
+    return calc_atomization_energy(
+        molecule=molecule, atom_output=pw_atom_out, molecule_output=pw_mol_out
+    ).result

@@ -1,20 +1,29 @@
 # -*- coding: utf-8 -*-
 """QeBaderWorkGraph of the AiiDA bader plugin"""
 from aiida import orm
-from aiida_workgraph import task
+from aiida_workgraph import task, spec
 from workgraph_collections.qe import PwBaseTask, PpTask
 from aiida_bader.calculations import BaderCalculation
+from typing import Annotated, Any
 
 BaderTask = task()(BaderCalculation)
 
 
-@task.graph(outputs=["bader_charge"])
-def bader_workgraph(
+@task.graph(outputs=spec.namespace(bader_charge=Any))
+def BaderWorkgraph(
     structure: orm.StructureData = None,
     pw_code: orm.Code = None,
     pp_code: orm.Code = None,
     bader_code: orm.Code = None,
-    inputs: dict = None,
+    inputs: Annotated[
+        dict,
+        spec.namespace(
+            scf=PwBaseTask.inputs,
+            pp_valence=PpTask.inputs,
+            pp_all=PpTask.inputs,
+            bader=BaderTask.inputs,
+        ),
+    ] = None,
 ):
     """Workgraph for Bader charge analysis.
     1. Run the SCF calculation.
@@ -40,7 +49,6 @@ def bader_workgraph(
         parent_folder=scf_outs.remote_folder,
         **inputs.get("pp_all", {}),
     )
-
     # -------- bader -----------
     bader_outs = BaderTask(
         code=bader_code,
@@ -48,4 +56,4 @@ def bader_workgraph(
         reference_charge_density_folder=pp_all_outs.remote_folder,
         **inputs.get("bader", {}),
     )
-    return {"bader_charge": bader_outs.bader_charge}
+    return bader_outs.bader_charge

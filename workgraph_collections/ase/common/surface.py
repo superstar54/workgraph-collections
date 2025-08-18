@@ -1,9 +1,8 @@
-from aiida_workgraph import task
+from aiida_workgraph import task, spec
 from typing import List
 from ase import Atoms
 
 
-@task.pythonjob()
 def get_slab_from_miller_indices_ase(
     atoms: Atoms,
     indices: List[int],
@@ -12,7 +11,7 @@ def get_slab_from_miller_indices_ase(
     tol: float = 1e-5,
     periodic: bool = True,
     center_slab: bool = True,
-):
+) -> Atoms:
     """Generate a slab from a bulk structure using ASE's surface module."""
     from ase.build import surface
 
@@ -30,15 +29,7 @@ def get_slab_from_miller_indices_ase(
     return slab
 
 
-@task.pythonjob(
-    outputs=[
-        {
-            "name": "slabs",
-            "identifier": "workgraph.namespace",
-            "metadata": {"dynamic": True},
-        }
-    ]
-)
+@task(outputs=spec.namespace(slabs=spec.dynamic(Atoms)))
 def get_slabs_from_miller_indices_ase(
     atoms: Atoms,
     indices: List[List[int]],
@@ -64,7 +55,7 @@ def get_slabs_from_miller_indices_ase(
     return {"slabs": slabs}
 
 
-@task.pythonjob()
+@task()
 def get_slab_from_miller_indices_pymatgen(
     atoms: Atoms,
     miller_index: List[int],
@@ -100,15 +91,7 @@ def get_slab_from_miller_indices_pymatgen(
     return slabs_with_info
 
 
-@task.pythonjob(
-    outputs=[
-        {
-            "name": "structures",
-            "identifier": "workgraph.namespace",
-            "metadata": {"dynamic": True},
-        }
-    ]
-)
+@task(outputs=spec.namespace(structures=spec.dynamic(Atoms)))
 def get_adsorption_structure(
     slab: Atoms,
     adsorbate: Atoms,
@@ -147,7 +130,7 @@ def get_adsorption_structure(
             }
             structures[f"{position}_{count}"] = atoms
             count += 1
-    return structures
+    return {"structures": structures}
 
 
 def add_adsorbate_to_nanoparticle(
