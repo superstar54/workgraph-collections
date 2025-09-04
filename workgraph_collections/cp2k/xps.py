@@ -1,4 +1,5 @@
-from aiida_workgraph import WorkGraph, task, build_task
+from aiida_workgraph import task
+from workgraph_collections.cp2k import Cp2kTask
 from aiida.orm import List, Dict, StructureData, Code, Bool
 from workgraph_collections.common.xps import binding_energy
 from aiida_quantumespresso.workflows.functions.get_xspectra_structures import (
@@ -9,19 +10,11 @@ from aiida_quantumespresso.workflows.functions.get_marked_structures import (
 )
 
 # add a output socket manually
-GetXspectraStructureTask = build_task(
-    get_xspectra_structures,
-    outputs=[
-        {"name": "output_parameters"},
-        {"name": "marked_structures"},
-    ],
+GetXspectraStructureTask = task(outputs=["output_parameters", "marked_structures"])(
+    get_xspectra_structures
 )
-GetMarkedStructuresTask = build_task(
-    get_marked_structures,
-    outputs=[
-        {"name": "output_parameters"},
-        {"name": "marked_structures"},
-    ],
+GetMarkedStructuresTask = task(outputs=["output_parameters", "marked_structures"])(
+    get_marked_structures
 )
 
 
@@ -37,12 +30,12 @@ def run_scf(
     metadata: dict = None,
     **marked_structures,
 ):
-    from aiida_cp2k.calculations import Cp2kCalculation
     from copy import deepcopy
+
+    results = {}
 
     output_parameters = marked_structures.pop("output_parameters", Dict({})).get_dict()
     sites_info = output_parameters["equivalent_sites_data"]
-    wg = WorkGraph("run_scf")
     if is_molecule:
         parameters["FORCE_EVAL"]["DFT"].setdefault("POISSON", {})
         parameters["FORCE_EVAL"]["DFT"]["POISSON"].update(
@@ -51,17 +44,15 @@ def run_scf(
         core_hole_treatment = "FULL"
     # ground state
     supercell = marked_structures.pop("supercell", structure)
-    scf_ground = wg.add_task(Cp2kCalculation, name="scf_ground")
-    scf_ground.set(
-        {
-            "code": code,
-            "parameters": Dict(parameters),
-            "metadata": metadata,
-            "file": basis_pseudo_files,
-            "structure": supercell,
-        }
-    )
-    scf_ground.set_context({"scf.ground": "output_parameters"})
+    scf_ground_inputs = {
+        "code": code,
+        "parameters": Dict(parameters),
+        "metadata": metadata,
+        "file": basis_pseudo_files,
+        "structure": supercell,
+    }
+    scf_ground_out = Cp2kTask(**scf_ground_inputs)
+    results["ground"] = scf_ground_out.output_parameters
     marked_structures = marked_structures["marked_structures"]
     # excited state node
     for key, marked_structure in marked_structures.items():
@@ -76,22 +67,20 @@ def run_scf(
             ch_parameters["FORCE_EVAL"]["DFT"].update(
                 {"UKS": False, "MULTIPLICITY": 1, "CHARGE": 0}
             )
-        scf_ch = wg.add_task(Cp2kCalculation, name=f"scf_{key}")
-        scf_ch.set(
-            {
-                "code": code,
-                "parameters": Dict(ch_parameters),
-                "metadata": metadata,
-                "file": basis_pseudo_files,
-                "structure": marked_structure,
-            }
-        )
-        scf_ch.set_context({f"scf.{key}": "output_parameters"})
-    return wg
+        scf_ch_inputs = {
+            "code": code,
+            "parameters": Dict(ch_parameters),
+            "metadata": metadata,
+            "file": basis_pseudo_files,
+            "structure": marked_structure,
+        }
+        scf_ch = Cp2kTask(**scf_ch_inputs)
+        results[key] = scf_ch.output_parameters
+    return results
 
 
-@task.graph(outputs=[{"name": "result", "from": "binding_energy.result"}])
-def xps_workgraph(
+@task.graph()
+def XpsWorkgraph(
     structure: StructureData = None,
     code: Code = None,
     atoms_list: list = None,
@@ -110,27 +99,18 @@ def xps_workgraph(
     3. Calculate the binding energy.
     """
 
-    wg = WorkGraph("XPS")
     if atoms_list:
-        structures_task = wg.add_task(
-            GetMarkedStructuresTask,
-            name="marked_structures",
+        structures_out = GetMarkedStructuresTask(
             structure=structure,
             atoms_list=atoms_list,
         )
     else:
-        structures_task = wg.add_task(
-            GetXspectraStructureTask,
-            name="marked_structures",
+        structures_out = GetXspectraStructureTask(
             structure=structure,
-            kwargs={
-                "absorbing_elements_list": List(element_list),
-                "is_molecule_input": Bool(is_molecule),
-            },
+            absorbing_elements_list=List(element_list),
+            is_molecule_input=Bool(is_molecule),
         )
-    scf_task = wg.add_task(
-        run_scf,
-        name="run_scf",
+    scf_out = run_scf(
         structure=structure,
         code=code,
         parameters=parameters,
@@ -139,14 +119,12 @@ def xps_workgraph(
         core_hole_treatment=core_hole_treatment,
         metadata=metadata,
         is_molecule=is_molecule,
-        marked_structures=structures_task.outputs["_outputs"],
+        marked_structures=structures_out,
     )
-    wg.add_task(
-        binding_energy,
+    return binding_energy(
         name="binding_energy",
-        sites_info=structures_task.outputs["output_parameters"],
-        scf_outputs=scf_task.outputs.result,
+        sites_info=structures_out.output_parameters,
+        scf_outputs=scf_out.result,
         corrections=correction_energies,
         energy_units="a.u",
-    )
-    return wg
+    ).result

@@ -1,14 +1,15 @@
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task
 from .base import gpaw_calculator
-from ase import Atoms
+from typing import Any, Annotated
 
 
-@task()
+@task.pythonjob()
 def wannier90(
     seed: str = "GaAs",
     binary: str = "wannier90.x",
     wannier_plot: bool = False,
-    **kwargs: dict,
+    bands: list = None,
+    orbitals_ai: Any = None,
 ):
     """Run Wannier90 calculation."""
     import os
@@ -16,7 +17,7 @@ def wannier90(
     from gpaw import GPAW
 
     calc = GPAW("parent_folder/" + seed + ".gpw", txt=None)
-    w90 = Wannier90(calc, seed=seed, **kwargs)
+    w90 = Wannier90(calc, seed=seed, bands=bands, orbitals_ai=orbitals_ai)
 
     w90.write_input(num_iter=1000, plot=wannier_plot)
     w90.write_wavefunctions()
@@ -30,21 +31,16 @@ def wannier90(
 
 
 @task.graph()
-def wannier90_workgraph(
-    atoms: Atoms = None,
+def Wannier90Workgraph(
+    scf_inputs: Annotated[dict, gpaw_calculator.inputs] = None,
+    wannier90_inputs: Annotated[dict, wannier90.inputs] = None,
 ):
     """Workgraph for Wannier90 calculation."""
-    wg = WorkGraph("Wannier90")
-    scf_task = wg.add_task(
-        "workgraph.pythonjob",
-        function=gpaw_calculator,
-        name="scf",
-        atoms=atoms,
+    scf_out = gpaw_calculator(
+        **scf_inputs,
     )
-    wg.add_task(
-        "workgraph.pythonjob",
-        function=wannier90,
-        name="wannier90",
-        parent_folder=scf_task.outputs["remote_folder"],
+    wannier_out = wannier90(
+        parent_folder=scf_out.remote_folder,
+        **wannier90_inputs,
     )
-    return wg
+    return wannier_out
