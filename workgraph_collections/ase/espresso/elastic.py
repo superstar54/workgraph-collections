@@ -1,6 +1,7 @@
-from aiida_workgraph import WorkGraph, task
+from aiida_workgraph import WorkGraph, task, dynamic
 from pymatgen.analysis.elasticity.strain import DeformedStructureSet
 from ase import Atoms
+from typing import Annotated, Any
 
 
 @task()
@@ -22,39 +23,32 @@ def get_deformed_structure_set(
     return deformed_structure_set
 
 
-@task.graph_builder(outputs=[{"name": "relax_results", "from": "context.results"}])
+@task.graph(outputs=dynamic(Any))
 def run_relaxation(
     deformed_structure_set: DeformedStructureSet, relax_inputs: dict
 ) -> WorkGraph:
     """Run relaxation for each deformed structure."""
-    from aiida_workgraph import WorkGraph
     from .pw import pw_calculator
 
-    wg = WorkGraph()
-    wg.context = {"deformed_structure": deformed_structure_set}
+    # Be careful, we generate new data here, thus break the data provenance!
     deformed_atoms = [
         structure.to_ase_atoms() for structure in deformed_structure_set.value
     ]
-    # becareful, we generate new data here, thus break the data provenance!
-    # that's why I put the deformed_structure in the context, so that we can link them
+    results = {}
     for i in range(len(deformed_atoms)):
-        relax = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name=f"relax_{i}",
+        relax_out = pw_calculator(
             atoms=deformed_atoms[i],
+            **relax_inputs,
         )
-        relax.set(relax_inputs)
-        # save the output parameters to the context
-        relax.set_context({f"results.{i}": "parameters"})
-    return wg
+        results[f"atoms_{i}"] = relax_out.trajectory
+    return results
 
 
 @task()
 def fit_elastic_constants(
     atoms: Atoms,
     deformed_structure_set: DeformedStructureSet,
-    relax_results: dict,
+    relax_results: Annotated[dict, dynamic(dict)],
     symmetry: bool = True,
 ):
     """Fit the elastic constants."""
@@ -87,7 +81,16 @@ def fit_elastic_constants(
     stresses = []
     strains = []
     for i in range(len(deformed_structure_set)):
-        stress = Stress.from_voigt(relax_results[f"{i}"]["stress"])
+        stress = relax_results[f"atoms_{i}"].get_array("stress")[0]
+        stress = [
+            stress[0][0],
+            stress[1][1],
+            stress[2][2],
+            stress[1][2],
+            stress[0][2],
+            stress[0][1],
+        ]
+        stress = Stress.from_voigt(stress)
         stresses.append(stress)
         strains.append(deformed_structure_set.deformations[i].green_lagrange_strain)
     if symmetry:
@@ -98,8 +101,8 @@ def fit_elastic_constants(
     return elastic_constants
 
 
-@task.graph_builder(outputs=[{"name": "result", "from": "fit_elastic.result"}])
-def elastic_workgraph(
+@task.graph()
+def ElasticWorkgraph(
     atoms: Atoms = None,
     command: str = "pw.x",
     computer: str = "localhost",
@@ -123,46 +126,34 @@ def elastic_workgraph(
 
     input_data = input_data or {}
 
-    wg = WorkGraph("Elastic")
     # -------- relax -----------
     if run_relax:
-        relax_task = wg.add_task(
-            "workgraph.pythonjob",
-            function=pw_calculator,
-            name="relax",
+        relax_input_data = deepcopy(input_data)
+        inputs = {
+            "command": command,
+            "input_data": relax_input_data,
+            "kpts": kpts,
+            "pseudopotentials": pseudopotentials,
+            "pseudo_dir": pseudo_dir,
+        }
+        relax_out = pw_calculator(
             atoms=atoms,
             calculation="vc-relax",
             metadata=metadata,
             computer=computer,
+            **inputs,
         )
-        relax_input_data = deepcopy(input_data)
-        relax_task.set(
-            {
-                "command": command,
-                "input_data": relax_input_data,
-                "kpts": kpts,
-                "pseudopotentials": pseudopotentials,
-                "pseudo_dir": pseudo_dir,
-            }
-        )
-        atoms = relax_task.outputs["atoms"]
+        atoms = relax_out.atoms
     # -------- deformed_structure -----------
-    deformed_structure_task = wg.add_task(
-        "workgraph.pythonjob",
-        function=get_deformed_structure_set,
-        name="deformed_structure",
+    deformed_structure_out = get_deformed_structure_set(
         atoms=atoms,
         norm_strains=norm_strains,
         shear_strains=shear_strains,
         symmetry=symmetry,
-        computer=computer,
-        metadata=metadata,
     )
     # -------- run_relaxation -----------
-    run_relaxation_task = wg.add_task(
-        run_relaxation,
-        name="run_relaxation",
-        deformed_structure_set=deformed_structure_task.outputs.result,
+    run_relaxation_out = run_relaxation(
+        deformed_structure_set=deformed_structure_out.result,
         relax_inputs={
             "command": command,
             "input_data": input_data,
@@ -174,15 +165,9 @@ def elastic_workgraph(
         },
     )
     # -------- fit_elastic -----------
-    wg.add_task(
-        "workgraph.pythonjob",
-        function=fit_elastic_constants,
-        name="fit_elastic",
+    return fit_elastic_constants(
         atoms=atoms,
-        deformed_structure_set=deformed_structure_task.outputs.result,
-        relax_results=run_relaxation_task.outputs["relax_results"],
+        deformed_structure_set=deformed_structure_out.result,
+        relax_results=run_relaxation_out,
         symmetry=symmetry,
-        computer=computer,
-        metadata=metadata,
     )
-    return wg

@@ -2,8 +2,8 @@ from aiida_workgraph import task
 from ase import Atoms
 
 
-@task(outputs=[{"name": "results"}])
-def emt_calculator(atoms: Atoms) -> float:
+@task.pythonjob
+def emt_calculator(atoms: Atoms) -> dict:
     from ase.calculators.emt import EMT
 
     atoms.calc = EMT()

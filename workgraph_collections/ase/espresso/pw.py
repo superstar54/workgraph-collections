@@ -1,8 +1,8 @@
-from aiida_workgraph import task
+from aiida_workgraph import task, spec
 from ase import Atoms
 from ase_quantumespresso.parsers.exit_code import PwExitCodes
-
 import dataclasses
+from typing import Any
 
 
 @dataclasses.dataclass
@@ -115,45 +115,45 @@ def handle_relax_recoverable_electronic_convergence_error(task):
 
 
 @task.pythonjob(
-    outputs=[
-        {"name": "atoms"},
-        {"name": "parameters"},
-        {"name": "kpoints"},
-        {"name": "band"},
-        {"name": "trajectory"},
-        {"name": "atomic_occupations"},
-        {"name": "energy"},
-    ],
-    error_handlers=[
-        {
+    outputs=spec.namespace(
+        atoms=Atoms,
+        parameters=dict,
+        kpoints=Any,
+        band=Any,
+        trajectory=Any,
+        atomic_occupations=Any,
+        energy=float,
+    ),
+    error_handlers={
+        "handle_relax_recoverable_ionic_convergence_error": {
             "handler": handle_relax_recoverable_ionic_convergence_error,
             "exit_codes": [
-                PwExitCodes.ERROR_IONIC_CONVERGENCE_NOT_REACHED,
-                PwExitCodes.ERROR_IONIC_CYCLE_BFGS_HISTORY_FAILURE,
-                PwExitCodes.ERROR_IONIC_CYCLE_EXCEEDED_NSTEP,
-                PwExitCodes.ERROR_IONIC_CYCLE_BFGS_HISTORY_AND_FINAL_SCF_FAILURE,
+                PwExitCodes.ERROR_IONIC_CONVERGENCE_NOT_REACHED.status,
+                PwExitCodes.ERROR_IONIC_CYCLE_BFGS_HISTORY_FAILURE.status,
+                PwExitCodes.ERROR_IONIC_CYCLE_EXCEEDED_NSTEP.status,
+                PwExitCodes.ERROR_IONIC_CYCLE_BFGS_HISTORY_AND_FINAL_SCF_FAILURE.status,
             ],
             "max_retries": 5,
         },
-        {
+        "handle_out_of_walltime": {
             "handler": handle_out_of_walltime,
-            "exit_codes": [PwExitCodes.ERROR_OUT_OF_WALLTIME],
+            "exit_codes": [PwExitCodes.ERROR_OUT_OF_WALLTIME.status],
             "max_retries": 5,
         },
-        {
+        "handle_electronic_convergence_not_reached": {
             "handler": handle_electronic_convergence_not_reached,
-            "exit_codes": [PwExitCodes.ERROR_ELECTRONIC_CONVERGENCE_NOT_REACHED],
+            "exit_codes": [PwExitCodes.ERROR_ELECTRONIC_CONVERGENCE_NOT_REACHED.status],
             "max_retries": 5,
         },
-        {
+        "handle_relax_recoverable_electronic_convergence_error": {
             "handler": handle_relax_recoverable_electronic_convergence_error,
             "exit_codes": [
-                PwExitCodes.ERROR_IONIC_CYCLE_ELECTRONIC_CONVERGENCE_NOT_REACHED,
-                PwExitCodes.ERROR_IONIC_CONVERGENCE_REACHED_FINAL_SCF_FAILED,
+                PwExitCodes.ERROR_IONIC_CYCLE_ELECTRONIC_CONVERGENCE_NOT_REACHED.status,
+                PwExitCodes.ERROR_IONIC_CONVERGENCE_REACHED_FINAL_SCF_FAILED.status,
             ],
             "max_retries": 5,
         },
-    ],
+    },
 )
 def pw_calculator(
     atoms: Atoms,
@@ -163,7 +163,7 @@ def pw_calculator(
     command: str = "pw.x",
     input_data: dict = None,
     pseudo_dir: str = "./pseudopotentials",
-    calculation: str = None,
+    calculation: str = "scf",
 ) -> dict:
     """Run a Quantum Espresso calculation on the given atoms object."""
     from ase.io.espresso import Namelist
@@ -176,9 +176,8 @@ def pw_calculator(
     input_data = Namelist(input_data)
     input_data.to_nested(binary="pw")
     # set the calculation type
-    if calculation:
-        input_data.setdefault("CONTROL", {})
-        input_data["CONTROL"]["calculation"] = calculation
+    input_data.setdefault("CONTROL", {})
+    input_data["CONTROL"]["calculation"] = calculation or "scf"
 
     # Set the output directory
     input_data.setdefault("CONTROL", {})

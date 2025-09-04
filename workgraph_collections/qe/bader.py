@@ -1,16 +1,29 @@
 # -*- coding: utf-8 -*-
 """QeBaderWorkGraph of the AiiDA bader plugin"""
 from aiida import orm
-from aiida_workgraph import WorkGraph, task
+from aiida_workgraph import task, spec
+from workgraph_collections.qe import PwBaseTask, PpTask
+from aiida_bader.calculations import BaderCalculation
+from typing import Annotated, Any
+
+BaderTask = task()(BaderCalculation)
 
 
-@task.graph_builder(outputs=[{"name": "charge", "from": "bader.charge"}])
-def bader_workgraph(
+@task.graph(outputs=spec.namespace(bader_charge=Any))
+def BaderWorkgraph(
     structure: orm.StructureData = None,
     pw_code: orm.Code = None,
     pp_code: orm.Code = None,
     bader_code: orm.Code = None,
-    inputs: dict = None,
+    inputs: Annotated[
+        dict,
+        spec.namespace(
+            scf=PwBaseTask.inputs,
+            pp_valence=PpTask.inputs,
+            pp_all=PpTask.inputs,
+            bader=BaderTask.inputs,
+        ),
+    ] = None,
 ):
     """Workgraph for Bader charge analysis.
     1. Run the SCF calculation.
@@ -19,43 +32,28 @@ def bader_workgraph(
     4. Run the Bader charge analysis.
     """
 
-    from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
-    from aiida_quantumespresso.calculations.pp import PpCalculation
-    from aiida_bader.calculations import BaderCalculation
-
     inputs = {} if inputs is None else inputs
-    wg = WorkGraph("BaderCharge")
     # -------- scf -----------
-    scf_task = wg.add_task(PwBaseWorkChain, name="scf")
     scf_inputs = inputs.get("scf", {})
     scf_inputs.update({"pw.structure": structure, "pw.code": pw_code})
-    scf_task.set(scf_inputs)
+    scf_outs = PwBaseTask(**scf_inputs)
     # -------- pp valence -----------
-    pp_valence = wg.add_task(
-        PpCalculation,
-        name="pp_valence",
+    pp_valence_outs = PpTask(
         code=pp_code,
-        parent_folder=scf_task.outputs["remote_folder"],
+        parent_folder=scf_outs.remote_folder,
+        **inputs.get("pp_valence", {}),
     )
-    pp_valence_inputs = inputs.get("pp_valence", {})
-    pp_valence.set(pp_valence_inputs)
     # -------- pp all -----------
-    pp_all = wg.add_task(
-        PpCalculation,
-        name="pp_all",
+    pp_all_outs = PpTask(
         code=pp_code,
-        parent_folder=scf_task.outputs["remote_folder"],
+        parent_folder=scf_outs.remote_folder,
+        **inputs.get("pp_all", {}),
     )
-    pp_all_inputs = inputs.get("pp_all", {})
-    pp_all.set(pp_all_inputs)
     # -------- bader -----------
-    bader_task = wg.add_task(
-        BaderCalculation,
-        name="bader",
+    bader_outs = BaderTask(
         code=bader_code,
-        charge_density_folder=pp_valence.outputs["remote_folder"],
-        reference_charge_density_folder=pp_all.outputs["remote_folder"],
+        charge_density_folder=pp_valence_outs.remote_folder,
+        reference_charge_density_folder=pp_all_outs.remote_folder,
+        **inputs.get("bader", {}),
     )
-    bader_inputs = inputs.get("bader", {})
-    bader_task.set(bader_inputs)
-    return wg
+    return bader_outs.bader_charge

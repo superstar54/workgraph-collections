@@ -25,7 +25,7 @@ GetMarkedStructuresTask = build_task(
 )
 
 
-@task.graph_builder(outputs=[{"name": "result", "form": "context.scf"}])
+@task.graph(outputs=[{"name": "result", "form": "context.scf"}])
 def run_scf(
     structure,
     code: Code = None,
@@ -90,7 +90,7 @@ def run_scf(
     return wg
 
 
-@task.graph_builder(outputs=[{"name": "result", "from": "binding_energy.result"}])
+@task.graph(outputs=[{"name": "result", "from": "binding_energy.result"}])
 def xps_workgraph(
     structure: StructureData = None,
     code: Code = None,

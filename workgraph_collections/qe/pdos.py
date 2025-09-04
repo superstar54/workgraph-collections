@@ -1,21 +1,17 @@
-# -*- coding: utf-8 -*-
 """PdosWorkGraph."""
 
 from aiida import orm
-from aiida_workgraph import WorkGraph
-from aiida_workgraph import task
-from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
-from aiida_quantumespresso.workflows.pw.relax import PwRelaxWorkChain
-from aiida_quantumespresso.calculations.dos import DosCalculation
-from aiida_quantumespresso.calculations.projwfc import ProjwfcCalculation
+from aiida_workgraph import task, spec
+from workgraph_collections.qe import PwBaseTask, PwRelaxTask, DosTask, ProjwfcTask
+from typing import Annotated
 
 
-@task()
-def generate_dos_parameters(nscf_outputs, parameters=None):
+@task.calcfunction()
+def generate_dos_parameters(output_band, output_parameters, parameters=None):
     """Generate DOS parameters from NSCF calculation."""
-    nscf_emin = nscf_outputs.output_band.get_array("bands").min()
-    nscf_emax = nscf_outputs.output_band.get_array("bands").max()
-    nscf_fermi = nscf_outputs.output_parameters.dict.fermi_energy
+    nscf_emin = output_band.get_array("bands").min()
+    nscf_emax = output_band.get_array("bands").max()
+    nscf_fermi = output_parameters.dict.fermi_energy
     paras = {} if parameters is None else parameters.get_dict()
     paras.setdefault("DOS", {})
     if paras.pop("align_to_fermi", False):
@@ -25,12 +21,12 @@ def generate_dos_parameters(nscf_outputs, parameters=None):
     return orm.Dict(paras)
 
 
-@task()
-def generate_projwfc_parameters(nscf_outputs, parameters=None):
+@task.calcfunction()
+def generate_projwfc_parameters(output_band, output_parameters, parameters=None):
     """Generate PROJWFC parameters from NSCF calculation."""
-    nscf_emin = nscf_outputs.output_band.get_array("bands").min()
-    nscf_emax = nscf_outputs.output_band.get_array("bands").max()
-    nscf_fermi = nscf_outputs.output_parameters.dict.fermi_energy
+    nscf_emin = output_band.get_array("bands").min()
+    nscf_emax = output_band.get_array("bands").max()
+    nscf_fermi = output_parameters.dict.fermi_energy
     paras = {} if parameters is None else parameters.get_dict()
     paras.setdefault("PROJWFC", {})
     if paras.pop("align_to_fermi", False):
@@ -39,30 +35,42 @@ def generate_projwfc_parameters(nscf_outputs, parameters=None):
     return orm.Dict(paras)
 
 
-@task.graph_builder()
-def pdos_workgraph(
+@task.graph(
+    outputs=spec.namespace(
+        dos=DosTask.outputs,
+        projwfc=ProjwfcTask.outputs,
+    ),
+)
+def PdosWorkGraph(
     structure: orm.StructureData = None,
     pw_code: orm.Code = None,
     dos_code: orm.Code = None,
     projwfc_code: orm.Code = None,
-    inputs: dict = None,
+    inputs: Annotated[
+        dict,
+        spec.namespace(
+            relax=PwRelaxTask.inputs,
+            scf=PwBaseTask.inputs,
+            nscf=PwBaseTask.inputs,
+            dos=DosTask.inputs,
+            projwfc=ProjwfcTask.inputs,
+        ),
+    ] = None,
     pseudo_family: str = None,
-    pseudos: dict = None,
+    pseudos: Annotated[dict, spec.dynamic(orm.UpfData)] = None,
     scf_parent_folder: orm.RemoteData = None,
     run_scf: bool = False,
     run_relax: bool = False,
 ):
-    """Generate PdosWorkGraph."""
+    """Workgraph to run a full PDOS calculation."""
+
     inputs = {} if inputs is None else inputs
     # Load the pseudopotential family.
     if pseudo_family is not None:
         pseudo_family = orm.load_group(pseudo_family)
         pseudos = pseudo_family.get_pseudos(structure=structure)
-    # create workgraph
-    wg = WorkGraph("PDOS")
     # ------- relax -----------
     if run_relax:
-        relax_task = wg.add_task(PwRelaxWorkChain, name="relax", structure=structure)
         relax_inputs = inputs.get("relax", {})
         relax_inputs.update(
             {
@@ -70,20 +78,18 @@ def pdos_workgraph(
                 "base.pw.pseudos": pseudos,
             }
         )
-        relax_task.set(relax_inputs)
+        relax_outs = PwRelaxTask(structure=structure, **relax_inputs)
         # override the structure
-        structure = relax_task.outputs["output_structure"]
+        structure = relax_outs.output_structure
     # -------- scf -----------
     if run_scf:
-        scf_task = wg.add_task(PwBaseWorkChain, name="scf")
         scf_inputs = inputs.get("scf", {})
         scf_inputs.update(
             {"pw.structure": structure, "pw.code": pw_code, "pw.pseudos": pseudos}
         )
-        scf_task.set(scf_inputs)
-        scf_parent_folder = scf_task.outputs["remote_folder"]
+        scf_outs = PwBaseTask(**scf_inputs)
+        scf_parent_folder = scf_outs.remote_folder
     # -------- nscf -----------
-    nscf_task = wg.add_task(PwBaseWorkChain, name="nscf")
     nscf_inputs = inputs.get("nscf", {})
     nscf_inputs.update(
         {
@@ -93,33 +99,35 @@ def pdos_workgraph(
             "pw.pseudos": pseudos,
         }
     )
-    nscf_task.set(nscf_inputs)
+    nscf_outs = PwBaseTask(**nscf_inputs)
     # -------- dos -----------
-    dos1 = wg.add_task(DosCalculation, name="dos")
     dos_input = inputs.get("dos", {})
     dos_input.update({"code": dos_code})
-    dos1.set(dos_input)
-    dos_parameters = wg.add_task(
-        generate_dos_parameters,
-        name="dos_parameters",
-        parameters=dos_input.get("parameters"),
+    dos_parameters_outs = generate_dos_parameters(
+        output_band=nscf_outs.output_band,
+        output_parameters=nscf_outs.output_parameters,
+        parameters=dos_input.pop("parameters", {}),
     )
-    wg.links.new(nscf_task.outputs["remote_folder"], dos1.inputs["parent_folder"])
-    wg.links.new(nscf_task.outputs["_outputs"], dos_parameters.inputs["nscf_outputs"])
-    wg.links.new(dos_parameters.outputs[0], dos1.inputs["parameters"])
+    dos_input.update(
+        {
+            "parent_folder": nscf_outs.remote_folder,
+            "parameters": dos_parameters_outs.result,
+        }
+    )
+    dos_outs = DosTask(**dos_input)
     # -------- projwfc -----------
-    projwfc1 = wg.add_task(ProjwfcCalculation, name="projwfc")
     projwfc_inputs = inputs.get("projwfc", {})
     projwfc_inputs.update({"code": projwfc_code})
-    projwfc1.set(projwfc_inputs)
-    projwfc_parameters = wg.add_task(
-        generate_projwfc_parameters,
-        name="projwfc_parameters",
-        parameters=projwfc_inputs.get("parameters"),
+    projwfc_parameters_outs = generate_projwfc_parameters(
+        output_band=nscf_outs.output_band,
+        output_parameters=nscf_outs.output_parameters,
+        parameters=projwfc_inputs.pop("parameters", {}),
     )
-    wg.links.new(nscf_task.outputs["remote_folder"], projwfc1.inputs["parent_folder"])
-    wg.links.new(
-        nscf_task.outputs["_outputs"], projwfc_parameters.inputs["nscf_outputs"]
+    projwfc_inputs.update(
+        {
+            "parent_folder": nscf_outs.remote_folder,
+            "parameters": projwfc_parameters_outs.result,
+        }
     )
-    wg.links.new(projwfc_parameters.outputs[0], projwfc1.inputs["parameters"])
-    return wg
+    projwfc_outs = ProjwfcTask(**projwfc_inputs)
+    return {"dos": dos_outs, "projwfc": projwfc_outs}

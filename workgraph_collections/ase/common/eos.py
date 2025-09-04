@@ -1,17 +1,8 @@
-from aiida_workgraph import task
+from aiida_workgraph import task, spec
 from ase import Atoms
 
 
-@task(
-    outputs=[
-        {
-            "name": "scaled_atoms",
-            "identifier": "workgraph.namespace",
-            "metadata": {"dynamic": True},
-        },
-        {"name": "volumes"},
-    ]
-)
+@task(outputs=spec.namespace(scaled_atoms=spec.dynamic(Atoms), volumes=dict))
 def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
     """Scale the structure by the given scales."""
     volumes = {}
@@ -24,16 +15,8 @@ def generate_scaled_atoms(atoms: Atoms, scales: list) -> dict:
     return {"scaled_atoms": scaled_atoms, "volumes": volumes}
 
 
-@task(
-    inputs=[
-        {
-            "name": "scf_results",
-            "identifier": "workgraph.namespace",
-            "metadata": {"dynamic": True},
-        }
-    ]
-)
-def fit_eos(volumes: dict, scf_results: dict) -> dict:
+@task
+def fit_eos(volumes: dict, scf_results: spec.dynamic(dict)) -> dict:
     """Fit the EOS of the data."""
     from ase.eos import EquationOfState
     from ase.units import kJ

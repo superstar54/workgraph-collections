@@ -1,12 +1,17 @@
-from aiida_workgraph import WorkGraph, task
+from aiida_workgraph import task, spec
 from ase import Atoms
 from .pw import pw_calculator
 from .base import dos_calculator, projwfc_calculator
 from aiida import orm
 
 
-@task.graph_builder()
-def pdos_workgraph(
+@task.graph(
+    outputs=spec.namespace(
+        dos=dos_calculator.outputs,
+        projwfc=projwfc_calculator.outputs,
+    ),
+)
+def PdosWorkgraph(
     atoms: Atoms = None,
     pw_command: str = "pw.x",
     dos_command: str = "dos.x",
@@ -21,60 +26,59 @@ def pdos_workgraph(
     """Generate PdosWorkGraph."""
     inputs = {} if inputs is None else inputs
     # create workgraph
-    with WorkGraph("PDOS") as wg:
-        # -------- relax -----------
-        if run_relax:
-            relax_inputs = inputs.get("relax", {})
-            relax_output = pw_calculator(
-                command=pw_command,
-                atoms=atoms,
-                calculation="vc-relax",
-                pseudopotentials=pseudopotentials,
-                pseudo_dir=pseudo_dir,
-                **relax_inputs,
-            )
-            atoms = relax_output.atoms
-        # -------- scf -----------
-        if run_scf:
-            scf_inputs = inputs.get("scf", {})
-            scf_output = pw_calculator(
-                command=pw_command,
-                atoms=atoms,
-                calculation="scf",
-                pseudopotentials=pseudopotentials,
-                pseudo_dir=pseudo_dir,
-                **scf_inputs,
-            )
-            scf_parent_folder = scf_output.remote_folder
-        # -------- nscf -----------
-        nscf_inputs = inputs.get("nscf", {})
-        nscf_output = pw_calculator(
+    # -------- relax -----------
+    if run_relax:
+        relax_inputs = inputs.get("relax", {})
+        relax_output = pw_calculator(
             command=pw_command,
             atoms=atoms,
-            calculation="nscf",
+            calculation="vc-relax",
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
-            parent_folder=scf_parent_folder,
-            parent_output_folder="out",
-            parent_folder_name="out",
-            **nscf_inputs,
+            **relax_inputs,
         )
-        # -------- dos -----------
-        dos_input = inputs.get("dos", {"input_data": {}})
-        dos_calculator(
-            command=dos_command,
-            parent_folder=nscf_output.remote_folder,
-            parent_output_folder="out",
-            parent_folder_name="out",
-            **dos_input,
+        atoms = relax_output.atoms
+    # -------- scf -----------
+    if run_scf:
+        scf_inputs = inputs.get("scf", {})
+        scf_output = pw_calculator(
+            command=pw_command,
+            atoms=atoms,
+            calculation="scf",
+            pseudopotentials=pseudopotentials,
+            pseudo_dir=pseudo_dir,
+            **scf_inputs,
         )
-        # -------- projwfc -----------
-        projwfc_input = inputs.get("projwfc", {"input_data": {}})
-        projwfc_calculator(
-            command=projwfc_command,
-            parent_folder=nscf_output.remote_folder,
-            parent_output_folder="out",
-            parent_folder_name="out",
-            **projwfc_input,
-        )
-        return wg
+        scf_parent_folder = scf_output.remote_folder
+    # -------- nscf -----------
+    nscf_inputs = inputs.get("nscf", {})
+    nscf_output = pw_calculator(
+        command=pw_command,
+        atoms=atoms,
+        calculation="nscf",
+        pseudopotentials=pseudopotentials,
+        pseudo_dir=pseudo_dir,
+        parent_folder=scf_parent_folder,
+        parent_output_folder="out",
+        parent_folder_name="out",
+        **nscf_inputs,
+    )
+    # -------- dos -----------
+    dos_input = inputs.get("dos", {"input_data": {}})
+    dos_outs = dos_calculator(
+        command=dos_command,
+        parent_folder=nscf_output.remote_folder,
+        parent_output_folder="out",
+        parent_folder_name="out",
+        **dos_input,
+    )
+    # -------- projwfc -----------
+    projwfc_input = inputs.get("projwfc", {"input_data": {}})
+    projwfc_outs = projwfc_calculator(
+        command=projwfc_command,
+        parent_folder=nscf_output.remote_folder,
+        parent_output_folder="out",
+        parent_folder_name="out",
+        **projwfc_input,
+    )
+    return {"dos": dos_outs, "projwfc": projwfc_outs}

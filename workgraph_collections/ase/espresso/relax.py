@@ -1,4 +1,4 @@
-from aiida_workgraph import WorkGraph, task
+from aiida_workgraph import task, spec
 from ase import Atoms
 from .pw import pw_calculator
 
@@ -10,45 +10,40 @@ def should_run_while(is_converged: bool):
 
 
 @task(
-    outputs=[
-        {"name": "current_number_of_bands"},
-        {"name": "is_converged"},
-        {"name": "current_atoms"},
-    ]
+    outputs=spec.namespace(current_number_of_bands=int, is_converged=bool),
 )
 def inspect_relax(
     parameters: dict,
-    current_atoms: Atoms,
+    atoms: Atoms,
     prev_atoms: Atoms = None,
     volume_threshold=0.1,
 ):
     """Inspect the results of the relaxation calculation to check for convergence."""
-    current_number_of_bands = parameters.get_dict()["number_of_bands"]
+    current_number_of_bands = parameters["number_of_bands"]
     is_converged = False
     if prev_atoms is not None:
-        prev_volume = prev_atoms.value.get_volume()
-        volume_difference = (
-            abs(prev_volume - current_atoms.value.get_volume()) / prev_volume
-        )
+        prev_volume = prev_atoms.get_volume()
+        volume_difference = abs(prev_volume - atoms.get_volume()) / prev_volume
         if volume_difference < volume_threshold:
             is_converged = True
 
     results = {
         "current_number_of_bands": current_number_of_bands,
         "is_converged": is_converged,
-        "current_atoms": current_atoms,
     }
     return results
 
 
-@task.graph_builder(
-    outputs=[
-        {"name": "atoms", "from": "relax.atoms"},
-        {"name": "parameters", "from": "context.parameters"},
-    ]
+@task.graph(
+    outputs=spec.namespace(atoms=Atoms, parameters=dict),
 )
-def relax_workgraph(
+def RelaxWorkgraph(
     atoms: Atoms = None,
+    prev_atoms: Atoms = None,
+    current_number_of_bands: int = None,
+    is_converged: bool = False,
+    number_of_iterations: int = 0,
+    inputs: dict = None,
     command: str = "pw.x",
     computer: str = "localhost",
     calculation: str = "vc-relax",
@@ -61,6 +56,7 @@ def relax_workgraph(
     max_iterations: int = 5,
     volume_threshold: float = 0.1,
     metadata: dict = None,
+    output_parameters: dict = None,
 ):
     """Construct a WorkGraph to relax a structure using Quantum ESPRESSO's pw.x.
 
@@ -77,68 +73,9 @@ def relax_workgraph(
     Returns:
         WorkGraph: The constructed workgraph for the relaxation workflow.
     """
-    from aiida_workgraph.orm.atoms import AtomsData
-
     input_data = {} if input_data is None else input_data
-    # create workgraph
-    wg = WorkGraph("BandsStructure")
-    wg.context = {
-        "current_atoms": atoms if isinstance(atoms, AtomsData) else AtomsData(atoms),
-        "prev_atoms": None,
-        "current_number_of_bands": None,
-        "prev_cell_volume": None,
-        "is_converged": False,
-    }
-    # Add a task to compare the convergence status
-    should_run_while_task = wg.add_task(
-        should_run_while, name="should_run_while", is_converged="{{is_converged}}"
-    )
-    # Create a while loop that continues until convergence or max_iterations is reached
-    while_task = wg.add_task(
-        "While",
-        name="while",
-        conditions=should_run_while_task.outputs.result,
-        max_iterations=max_iterations,
-    )
-    relax_task = wg.add_task(
-        pw_calculator,
-        name="relax",
-        atoms="{{current_atoms}}",
-        command=command,
-        computer=computer,
-        metadata=metadata,
-        input_data=input_data,
-        pseudopotentials=pseudopotentials,
-        pseudo_dir=pseudo_dir,
-        kpts=kpts,
-        kspacing=kspacing,
-        calculation=calculation,
-    )
-    atoms = relax_task.outputs["atoms"]
-    relax_task.set_context({"parameters": "parameters"})
-    # -------- inspect relax -----------
-    inspect_relax_task = wg.add_task(
-        inspect_relax,
-        name="inspect_relax",
-        parameters=relax_task.outputs["parameters"],
-        prev_atoms="{{current_atoms}}",
-        current_atoms=relax_task.outputs["atoms"],
-        volume_threshold=volume_threshold,
-    )
-    # Update context variables with outputs from inspect_relax_task
-    inspect_relax_task.set_context(
-        {
-            "current_number_of_bands": "current_number_of_bands",
-            "is_converged": "is_converged",
-            "current_atoms": "current_atoms",
-        }
-    )
-    while_task.children.add(["relax", inspect_relax_task])
-    # Optionally add an SCF calculation after relaxation is complete
-    if run_scf:
-        scf_task = wg.add_task(
-            pw_calculator,
-            name="scf",
+    if not is_converged and number_of_iterations < max_iterations:
+        relax_task_out = pw_calculator(
             atoms=atoms,
             command=command,
             computer=computer,
@@ -146,10 +83,52 @@ def relax_workgraph(
             input_data=input_data,
             pseudopotentials=pseudopotentials,
             pseudo_dir=pseudo_dir,
-            calculation="scf",
             kpts=kpts,
             kspacing=kspacing,
+            calculation=calculation,
         )
-        scf_task.set_context({"parameters": "parameters"})
-
-    return wg
+        # -------- inspect relax -----------
+        inspect_relax_out = inspect_relax(
+            parameters=relax_task_out.parameters,
+            prev_atoms=atoms,
+            atoms=relax_task_out.atoms,
+            volume_threshold=volume_threshold,
+        )
+        return RelaxWorkgraph(
+            atoms=relax_task_out.atoms,
+            prev_atoms=atoms,
+            current_number_of_bands=inspect_relax_out.current_number_of_bands,
+            is_converged=inspect_relax_out.is_converged,
+            number_of_iterations=number_of_iterations + 1,
+            inputs=inputs,
+            command=command,
+            computer=computer,
+            input_data=input_data,
+            pseudopotentials=pseudopotentials,
+            pseudo_dir=pseudo_dir,
+            kpts=kpts,
+            kspacing=kspacing,
+            run_scf=run_scf,
+            max_iterations=max_iterations,
+            volume_threshold=volume_threshold,
+            output_parameters=relax_task_out.parameters,
+        )
+    else:
+        # Optionally add an SCF calculation after relaxation is complete
+        if run_scf:
+            scf_task_out = pw_calculator(
+                atoms=atoms,
+                command=command,
+                computer=computer,
+                metadata=metadata,
+                input_data=input_data,
+                pseudopotentials=pseudopotentials,
+                pseudo_dir=pseudo_dir,
+                calculation="scf",
+                kpts=kpts,
+                kspacing=kspacing,
+            )
+    return {
+        "atoms": atoms,
+        "parameters": scf_task_out.parameters if run_scf else output_parameters,
+    }

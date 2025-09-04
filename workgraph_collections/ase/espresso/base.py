@@ -1,8 +1,9 @@
-from aiida_workgraph import task
+from aiida_workgraph import task, spec
 from ase import Atoms
+from typing import Any
 
 
-@task.pythonjob(outputs=[{"name": "parameters"}, {"name": "dos"}])
+@task.pythonjob(outputs=spec.namespace(parameters=dict, dos=dict))
 def dos_calculator(
     command: str = "dos.x",
     input_data: dict = None,
@@ -23,12 +24,7 @@ def dos_calculator(
 
 
 @task.pythonjob(
-    outputs=[
-        {"name": "parameters"},
-        {"name": "dos"},
-        {"name": "bands"},
-        {"name": "projections"},
-    ]
+    outputs=spec.namespace(parameters=dict, dos=dict, bands=Any, projections=Any)
 )
 def projwfc_calculator(
     command: str = "projwfc.x",
@@ -50,7 +46,7 @@ def projwfc_calculator(
     return calc.results
 
 
-@task.pythonjob(outputs=[{"name": "results"}])
+@task.pythonjob()
 def pp_calculator(
     command: str = "pp.x",
     input_data: dict = None,
@@ -67,11 +63,11 @@ def pp_calculator(
 
     calc = Espresso(profile=profile, template=PpTemplate(), input_data=input_data)
 
-    results = calc.get_property("pp", Atoms())
-    return {"results": results}
+    result = calc.get_property("pp", Atoms())
+    return result
 
 
-@task.pythonjob(outputs=[{"name": "results"}])
+@task.pythonjob()
 def xspectra_calculator(
     command: str = "xspectra.x",
     input_data: dict = None,
@@ -96,11 +92,11 @@ def xspectra_calculator(
         koffset=koffset,
     )
 
-    results = calc.get_property("xspectra", Atoms())
-    return {"results": results}
+    result = calc.get_property("xspectra", Atoms())
+    return result
 
 
-@task.pythonjob(outputs=[{"name": "results"}])
+@task.pythonjob()
 def vibrations(
     atoms: Atoms,
     pseudopotentials: dict,
@@ -146,15 +142,10 @@ def vibrations(
     vib.write_jmol()
     vib.write_dos()
     energies = vib.get_energies()
-    return {"energies": energies}
+    return energies
 
 
-@task.pythonjob(
-    outputs=[
-        {"name": "parameters"},
-        {"name": "ld1"},
-    ]
-)
+@task.pythonjob(outputs=spec.namespace(parameters=dict, ld1=dict))
 def ld1_calculator(
     command: str = "ld1.x",
     input_data: dict = None,

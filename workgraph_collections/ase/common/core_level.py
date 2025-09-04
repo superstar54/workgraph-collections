@@ -1,4 +1,4 @@
-from aiida_workgraph import task
+from aiida_workgraph import task, spec
 from ase import Atoms
 
 
@@ -77,15 +77,7 @@ def create_supercell(atoms, min_cell_length, is_molecule):
     return atoms
 
 
-@task(
-    outputs=[
-        {
-            "name": "structures",
-            "identifier": "workgraph.namespace",
-            "metadata": {"dynamic": True},
-        },
-    ]
-)
+@task(outputs=spec.namespace(structures=spec.dynamic(Atoms)))
 def get_marked_structures(
     atoms: Atoms = None,
     atom_list: list = None,

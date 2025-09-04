@@ -1,30 +1,24 @@
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task, spec
 from workgraph_collections.ase.common.surface import get_adsorption_structure
 from ase import Atoms
-from typing import Dict
 
 
-@task.graph_builder(
-    outputs=[
-        {"name": "parameters", "from": "context.parameters"},
-        {"name": "structures", "from": "context.structures"},
-    ]
+@task.graph(
+    outputs=spec.namespace(
+        parameters=spec.dynamic(dict), structures=spec.dynamic(dict)
+    ),
 )
 def relax_structures(slabs, inputs):
     """Run the scf calculation for each atoms."""
-    from aiida_workgraph import WorkGraph
     from workgraph_collections.ase.espresso.relax import relax_workgraph
 
-    wg = WorkGraph()
+    parameters = {}
+    structures = {}
     for key, atoms in slabs.items():
-        scf = wg.tasks.new(
-            relax_workgraph, name=f"relax_{key}", atoms=atoms, calculation="relax"
-        )
-        scf.set(inputs)
-        scf.set_context(
-            {f"parameters.{key}": "parameters", f"structures.{key}": "atoms"}
-        )
-    return wg
+        relax_out = relax_workgraph(atoms=atoms, calculation="relax", **inputs)
+        parameters[key] = relax_out.parameters
+        structures[key] = relax_out.atoms
+    return {"parameters": parameters, "structures": structures}
 
 
 @task.pythonjob(
@@ -44,8 +38,8 @@ def relax_structures(slabs, inputs):
 def get_surface_energy(
     bulk_atoms: Atoms,
     bulk_parameters: dict,
-    slab_parameters: Dict[str, dict],
-    slab_structures: Dict[str, dict],
+    slab_parameters: spec.dynamic(dict),
+    slab_structures: spec.dynamic(Atoms),
 ):
     """Calculate the surface energy."""
     from ase.units import J, eV
@@ -73,12 +67,7 @@ def get_surface_energy(
     return surface_energies
 
 
-@task.graph_builder(
-    outputs=[
-        {"name": "parameters", "from": "relax_structures.parameters"},
-        {"name": "structures", "from": "relax_structures.structures"},
-    ]
-)
+@task.graph()
 def adsorption_workgraph(
     slab: Atoms = None,
     adsorbate: Atoms = None,
@@ -105,12 +94,9 @@ def adsorption_workgraph(
 
     input_data = input_data or {}
 
-    wg = WorkGraph("slabs")
     # -------- relax slab -----------
     if relax_slab:
-        relax_slab_task = wg.tasks.new(
-            relax_workgraph,
-            name="relax_slab",
+        relax_slab_out = relax_workgraph(
             command=command,
             input_data=input_data,
             pseudopotentials=pseudopotentials,
@@ -121,11 +107,9 @@ def adsorption_workgraph(
             kpts=kpts,
             kspacing=kspacing,
         )
-        slab = relax_slab_task.outputs["atoms"]
+        slab = relax_slab_out.atoms
     # -------- generate slab with adsorbate -----------
-    add_adsorbate_task = wg.tasks.new(
-        get_adsorption_structure,
-        name="add_adsorbate",
+    add_adsorbate_out = get_adsorption_structure(
         slab=slab,
         adsorbate=adsorbate,
         distance=distance,
@@ -134,10 +118,8 @@ def adsorption_workgraph(
         metadata=metadata,
     )
     # -------- relax_structures -----------
-    relax_structures_task = wg.tasks.new(
-        relax_structures,
-        name="relax_structures",
-        structures=add_adsorbate_task.outputs["structures"],
+    relax_structures_out = relax_structures(
+        structures=add_adsorbate_out.structures,
         inputs={
             "command": command,
             "input_data": input_data,
@@ -152,11 +134,9 @@ def adsorption_workgraph(
     if calc_adsorption_energy:
         if adsorbate_energy is None:
             raise ValueError("adsorbate_energy must be provided")
-        wg.tasks.new(
-            get_surface_energy,
-            name="get_surface_energy",
-            bulk_parameters=relax_slab_task.outputs["parameters"],
+        surf_energy_out = get_surface_energy(
+            bulk_parameters=relax_slab_out.parameters,
             adsorbate_energy=adsorbate_energy,
-            slab_parameters=relax_structures_task.outputs["parameters"],
-        )
-    return wg
+            slab_parameters=relax_structures_out.parameters,
+        ).result
+    return surf_energy_out

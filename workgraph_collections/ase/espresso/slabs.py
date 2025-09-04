@@ -1,49 +1,32 @@
-from aiida_workgraph import task, WorkGraph
+from aiida_workgraph import task, namespace, dynamic
 from workgraph_collections.ase.common.surface import get_slabs_from_miller_indices_ase
 from ase import Atoms
-from typing import List, Dict
+from typing import List, Annotated
+from workgraph_collections.ase.espresso.relax import RelaxWorkgraph
 
 
-@task.graph_builder(
-    outputs=[
-        {"name": "parameters", "from": "context.parameters"},
-        {"name": "structures", "from": "context.structures"},
-    ]
-)
-def relax_slabs(slabs, inputs):
+@task.graph(outputs=namespace(parameters=dynamic(dict), structures=dynamic(Atoms)))
+def RelaxSlabs(
+    slabs: Annotated[dict, dynamic(Atoms)],
+    inputs: Annotated[dict, RelaxWorkgraph.inputs.exclude("atoms")],
+):
     """Run the scf calculation for each atoms."""
-    from aiida_workgraph import WorkGraph
-    from workgraph_collections.ase.espresso.relax import relax_workgraph
 
-    wg = WorkGraph()
+    parameters = {}
+    structures = {}
     for key, atoms in slabs.items():
-        scf = wg.add_task(relax_workgraph, name=f"relax_{key}", atoms=atoms)
-        scf.set(inputs)
-        scf.set_context(
-            {f"parameters.{key}": "parameters", f"structures.{key}": "atoms"}
-        )
-    return wg
+        scf_out = RelaxWorkgraph(atoms=atoms, **inputs)
+        parameters[key] = scf_out.parameters
+        structures[key] = scf_out.atoms
+    return {"parameters": parameters, "structures": structures}
 
 
-@task.pythonjob(
-    inputs=[
-        {
-            "name": "slab_parameters",
-            "identifier": "workgraph.namespace",
-            "metadata": {"dynamic": True},
-        },
-        {
-            "name": "slab_structures",
-            "identifier": "workgraph.namespace",
-            "metadata": {"dynamic": True},
-        },
-    ]
-)
+@task()
 def get_surface_energy(
     bulk_atoms: Atoms,
     bulk_parameters: dict,
-    slab_parameters: Dict[str, dict],
-    slab_structures: Dict[str, dict],
+    slab_parameters: dynamic(dict),
+    slab_structures: dynamic(Atoms),
 ):
     """Calculate the surface energy."""
     from ase.units import J, eV
@@ -71,13 +54,12 @@ def get_surface_energy(
     return surface_energies
 
 
-@task.graph_builder(
-    outputs=[
-        {"name": "parameters", "from": "relax_slabs.parameters"},
-        {"name": "structures", "from": "relax_slabs.structures"},
-    ]
+@task.graph(
+    outputs=namespace(
+        parameters=dynamic(dict), structures=dynamic(Atoms), surface_energy=dict
+    )
 )
-def slabs_workgraph(
+def SlabsWorkgraph(
     atoms: Atoms = None,
     command: str = "pw.x",
     computer: str = "localhost",
@@ -90,7 +72,6 @@ def slabs_workgraph(
     kspacing: float = None,
     input_data: dict = None,
     metadata: dict = None,
-    relax_bulk: bool = True,
     calc_surface_energy: bool = False,
 ):
     """Workgraph for generating slabs and relax them.
@@ -98,43 +79,33 @@ def slabs_workgraph(
     2. Generate slabs.
     3. Relax the slabs.
     """
-    from workgraph_collections.ase.espresso.relax import relax_workgraph
+    from workgraph_collections.ase.espresso.relax import RelaxWorkgraph
 
     input_data = input_data or {}
 
-    wg = WorkGraph("slabs")
     # -------- relax bulk -----------
-    if run_relax:
-        relax_bulk_task = wg.add_task(
-            relax_workgraph,
-            name="relax_bulk",
-            command=command,
-            input_data=input_data,
-            pseudopotentials=pseudopotentials,
-            pseudo_dir=pseudo_dir,
-            atoms=atoms,
-            metadata=metadata,
-            computer=computer,
-            kpts=kpts,
-            kspacing=kspacing,
-        )
-        atoms = relax_bulk_task.outputs["atoms"]
+    relax_bulk_out = RelaxWorkgraph(
+        command=command,
+        input_data=input_data,
+        pseudopotentials=pseudopotentials,
+        pseudo_dir=pseudo_dir,
+        atoms=atoms,
+        metadata=metadata,
+        computer=computer,
+        kpts=kpts,
+        kspacing=kspacing,
+    )
+    atoms = relax_bulk_out.atoms
     # -------- generate_slabs -----------
-    generate_slabs_task = wg.add_task(
-        get_slabs_from_miller_indices_ase,
-        name="generate_slabs",
+    generate_slabs_out = get_slabs_from_miller_indices_ase(
         atoms=atoms,
         indices=miller_indices,
         layers=layers,
         vacuum=vacuum,
-        computer=computer,
-        metadata=metadata,
     )
     # -------- relax_slabs -----------
-    relax_slabs_task = wg.add_task(
-        relax_slabs,
-        name="relax_slabs",
-        slabs=generate_slabs_task.outputs["slabs"],
+    relax_slabs_out = RelaxSlabs(
+        slabs=generate_slabs_out.slabs,
         inputs={
             "command": command,
             "input_data": input_data,
@@ -147,12 +118,14 @@ def slabs_workgraph(
         },
     )
     if calc_surface_energy:
-        wg.tasks.new(
-            get_surface_energy,
-            name="get_surface_energy",
+        surface_energy_out = get_surface_energy(
             bulk_atoms=atoms,
-            bulk_parameters=relax_bulk_task.outputs["parameters"],
-            slab_parameters=relax_slabs_task.outputs["parameters"],
-            slab_structures=relax_slabs_task.outputs["structures"],
+            bulk_parameters=relax_bulk_out.parameters,
+            slab_parameters=relax_slabs_out.parameters,
+            slab_structures=relax_slabs_out.structures,
         )
-    return wg
+    return {
+        "parameters": relax_slabs_out.parameters,
+        "structures": relax_slabs_out.structures,
+        "surface_energy": surface_energy_out.result,
+    }
