@@ -3,9 +3,6 @@ from workgraph_collections.ase.espresso.atomization_energy import AtomizationEne
 from workgraph_collections.ase.espresso.base import vibrations
 from aiida_workgraph import WorkGraph
 import pytest
-from aiida_pythonjob.config import config
-
-config["allow_pickle"] = True
 
 input_data = {
     "CONTROL": {
@@ -47,7 +44,7 @@ def test_atomization_energy(n_atom, n2_molecule, pseudo_dir, metadata_aiida):
 
     pseudopotentials = {"N": "N.pbe-n-rrkjus_psl.1.0.0.UPF"}
     # ------------------------- Set the inputs -------------------------
-    wg = AtomizationEnergy.build_graph(
+    wg = AtomizationEnergy.build(
         atom=n_atom,
         molecule=n2_molecule,
         pseudopotentials=pseudopotentials,
@@ -68,7 +65,7 @@ def test_eos(bulk_si, pseudo_dir, metadata_aiida):
 
     pseudopotentials = {"Si": "Si.pbe-nl-rrkjus_psl.1.0.0.UPF"}
     # ------------------------- Set the inputs -------------------------
-    wg = EosWorkGraph.build_graph(
+    wg = EosWorkGraph.build(
         atoms=bulk_si,
         computer="localhost",
         scales=[0.95, 1.0, 1.05],
@@ -95,7 +92,7 @@ def test_relax(bulk_si, pseudo_dir, metadata_aiida):
 
     pseudopotentials = {"Si": "Si.pbe-nl-rrkjus_psl.1.0.0.UPF"}
     # ------------------------- Set the inputs -------------------------
-    wg = RelaxWorkgraph.build_graph(
+    wg = RelaxWorkgraph.build(
         atoms=bulk_si,
         computer="localhost",
         command="mpirun -np 2 pw.x",

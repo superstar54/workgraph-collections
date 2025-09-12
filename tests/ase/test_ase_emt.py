@@ -3,7 +3,7 @@ from workgraph_collections.ase.emt.atomization_energy import AtomizationEnergy
 
 
 def test_atomization_energy(n_atom, n2_molecule, metadata_aiida):
-    wg = AtomizationEnergy.build_graph(
+    wg = AtomizationEnergy.build(
         atom=n_atom, molecule=n2_molecule, metadata=metadata_aiida
     )
     # ------------------------- Submit the calculation -------------------
