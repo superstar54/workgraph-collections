@@ -49,20 +49,14 @@ def PdosWorkGraph(
     inputs: Annotated[
         dict,
         spec.namespace(
-            relax=Annotated[
-                dict, PwRelaxTask.inputs, spec.SocketSpecSelect(exclude="structure")
-            ],
-            scf=Annotated[
-                dict, PwBaseTask.inputs, spec.SocketSpecSelect(exclude="pw.structure")
-            ],
+            relax=Annotated[dict, PwRelaxTask.inputs, spec.select(exclude="structure")],
+            scf=Annotated[dict, PwBaseTask.inputs, spec.select(exclude="pw.structure")],
             nscf=Annotated[
-                dict, PwBaseTask.inputs, spec.SocketSpecSelect(exclude="pw.structure")
+                dict, PwBaseTask.inputs, spec.select(exclude="pw.structure")
             ],
-            dos=Annotated[
-                dict, DosTask.inputs, spec.SocketSpecSelect(exclude="parent_folder")
-            ],
+            dos=Annotated[dict, DosTask.inputs, spec.select(exclude="parent_folder")],
             projwfc=Annotated[
-                dict, ProjwfcTask.inputs, spec.SocketSpecSelect(exclude="parent_folder")
+                dict, ProjwfcTask.inputs, spec.select(exclude="parent_folder")
             ],
         ),
     ] = None,

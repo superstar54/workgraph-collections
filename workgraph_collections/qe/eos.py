@@ -1,7 +1,7 @@
 from aiida import orm
 from aiida_workgraph import task, spec
 from workgraph_collections.common.eos import scale_structure, fit_eos
-from workgraph_collections.qe import PwTask
+from workgraph_collections.qe import PwBaseTask
 from typing import Annotated, Any
 
 
@@ -9,12 +9,15 @@ from typing import Annotated, Any
 @task.graph(outputs=spec.namespace(result=spec.dynamic(Any)))
 def all_scf(
     structures: Annotated[dict, spec.dynamic(orm.StructureData)],
-    scf_inputs: Annotated[dict, spec.dynamic(Any)],
+    scf_inputs: Annotated[
+        dict, PwBaseTask.inputs, spec.select(exclude="pw.structure")
+    ] = None,
 ) -> dict:
     """Run the scf calculation for each structure."""
     result = {}
     for key, structure in structures.items():
-        scf_out = PwTask(structure=structure, **scf_inputs)
+        scf_inputs["pw.structure"] = structure
+        scf_out = PwBaseTask(**scf_inputs)
         # save the output parameters to the context
         result[key] = scf_out.output_parameters
     return {"result": result}
@@ -23,12 +26,10 @@ def all_scf(
 @task.graph
 def EosWorkgraph(
     structure: orm.StructureData = None,
-    code: orm.Code = None,
     scales: list = None,
-    parameters: dict = None,
-    kpoints: orm.KpointsData = None,
-    pseudos: Annotated[dict, spec.dynamic(orm.UpfData)] = None,
-    metadata: Annotated[dict, spec.dynamic(Any)] = None,
+    scf_inputs: Annotated[
+        dict, PwBaseTask.inputs, spec.select(exclude="pw.structure")
+    ] = None,
 ):
     """Workgraph for EOS calculation.
     1. Get the scaled structures.
@@ -38,13 +39,7 @@ def EosWorkgraph(
     scale_structure_out = scale_structure(structure=structure, scales=scales)
     all_scf_out = all_scf(
         structures=scale_structure_out.structures,
-        scf_inputs={
-            "code": code,
-            "parameters": orm.Dict(parameters),
-            "kpoints": kpoints,
-            "pseudos": pseudos,
-            "metadata": metadata,
-        },
+        scf_inputs=scf_inputs,
     )
     return fit_eos(
         volumes=scale_structure_out.volumes,

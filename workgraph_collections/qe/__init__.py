@@ -20,6 +20,9 @@ PpTask = task()(PpCalculation)
 # Add only two outputs port here, because we only use these outputs in the following.
 SeekpathTask = task(
     outputs=spec.namespace(
-        primitive_structure=orm.StructureData, explicit_kpoints=orm.KpointsData
+        parameters=orm.Dict,
+        primitive_structure=orm.StructureData,
+        explicit_kpoints=orm.KpointsData,
+        conv_structure=orm.StructureData,
     )
 )(seekpath_structure_analysis)

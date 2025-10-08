@@ -2,7 +2,7 @@
 
 from aiida import orm
 from aiida_workgraph import task, spec
-from node_graph.socket_spec import SocketSpecSelect
+from node_graph.socket_spec import select
 from workgraph_collections.qe import PwBaseTask, PwRelaxTask, SeekpathTask
 from typing import Annotated
 
@@ -48,15 +48,9 @@ def BandsWorkgraph(
     inputs: Annotated[
         dict,
         spec.namespace(
-            relax=Annotated[
-                dict, PwRelaxTask.inputs, SocketSpecSelect(exclude="structure")
-            ],
-            scf=Annotated[
-                dict, PwBaseTask.inputs, SocketSpecSelect(exclude="pw.structure")
-            ],
-            bands=Annotated[
-                dict, PwBaseTask.inputs, SocketSpecSelect(exclude="pw.structure")
-            ],
+            relax=Annotated[dict, PwRelaxTask.inputs, select(exclude="structure")],
+            scf=Annotated[dict, PwBaseTask.inputs, select(exclude="pw.structure")],
+            bands=Annotated[dict, PwBaseTask.inputs, select(exclude="pw.structure")],
         ),
     ] = None,
     run_relax: bool = False,

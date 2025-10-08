@@ -18,10 +18,18 @@ def BaderWorkgraph(
     inputs: Annotated[
         dict,
         spec.namespace(
-            scf=PwBaseTask.inputs,
-            pp_valence=PpTask.inputs,
-            pp_all=PpTask.inputs,
-            bader=BaderTask.inputs,
+            scf=Annotated[dict, PwBaseTask.inputs, spec.select(exclude="pw.structure")],
+            pp_valence=Annotated[
+                dict, PpTask.inputs, spec.select(exclude="parent_folder")
+            ],
+            pp_all=Annotated[dict, PpTask.inputs, spec.select(exclude="parent_folder")],
+            bader=Annotated[
+                dict,
+                BaderTask.inputs,
+                spec.select(
+                    exclude=["charge_density_folder", "reference_charge_density_folder"]
+                ),
+            ],
         ),
     ] = None,
 ):
